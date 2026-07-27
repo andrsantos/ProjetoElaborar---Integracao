@@ -1,0 +1,31 @@
+/* You can add global styles to this file, and also import other style files */
+
+/* 1. Importe do CSS do ngx-toastr */
+@import 'ngx-toastr/toastr';
+/* Variáveis Globais de Cor */
+:root {
+  --cor-primaria: #0d6efd;
+  --cor-secundaria: #343a40; /* Um cinza mais escuro para a sidebar */
+  --cor-sucesso: #198754;
+  --cor-perigo: #dc3545;
+  --cor-fundo: #f8f9fa;
+  --cor-cartao: #ffffff;
+  --cor-borda: #dee2e6;
+  --cor-texto: #212529;
+  --cor-texto-sidebar: #f8f9fa; /* Texto claro para a sidebar */
+  --sombra-cartao: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --raio-borda: 8px;
+}
+
+/* --- Reset Básico --- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+a {
+  text-decoration: none;
+  color: var(--cor-primaria);
+}

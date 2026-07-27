@@ -1,0 +1,223 @@
+<div class="container">
+
+  <!-- <header>
+    <h1>Gerador de Prova (Modo Banco de Questões)</h1>
+  </header> -->
+
+  
+    <header class="dashboard-header" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <h1 style="margin: 0;">Gerador de Prova (Modo Banco de Questões)</h1>
+    
+    <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </header>
+
+
+
+
+  <div class="form-secao">
+    <h3>1. Configurar Filtros da Prova</h3>
+
+
+    <div class="alert-warning-empty" *ngIf="!isLoadingAssuntos && !temQuestoesCadastradas">
+      <i class="fas fa-exclamation-triangle"></i>
+      Não existem questões cadastradas no banco para esta disciplina. Para gerar provas, vá até o menu Gerenciar Banco e crie ou importe questões.
+    </div>
+
+
+    <div class="qconcursos-filter-bar">
+      <div class="form-group-filter">
+        <label>Conceitos (Assuntos Específicos)</label>
+        
+        <select class="form-control-inline-select" [(ngModel)]="conceitoSelecionado" [disabled]="conceitosDisponiveis.length === 0">
+          <option value="" disabled selected>Selecione um conceito...</option>
+          <option *ngFor="let conceito of conceitosDisponiveis" [value]="conceito">{{ conceito }}</option>
+        </select>
+      </div>
+
+      <button class="btn-adicionar-bloco" (click)="adicionarFiltroProva()" [disabled]="!conceitoSelecionado">
+        Adicionar à Prova
+      </button>
+    </div>
+    
+
+    <div class="lista-resumo-container" *ngIf="topicosSelecionados.length > 0">
+      <strong>Filtros Aplicados: </strong>
+      <span class="texto-lista">{{ listaTopicosFormatada }}</span>
+    </div>
+
+    <hr *ngIf="topicosSelecionados.length > 0">
+
+    <div class="topicos-selecionados-container">
+      <div class="topico-item-form" *ngFor="let item of topicosSelecionados; let i = index">
+        <div class="topico-item-header">
+          <div class="header-titulos">
+            <ng-container *ngIf="item.subtopicos && item.subtopicos.length > 0">
+            <h4>{{ item.subtopicos[0].conceito }}</h4>              
+             <small class="conceitos-badge geral">
+                Módulo: {{ item.topico }}
+              </small>
+            </ng-container>
+
+            <ng-container *ngIf="!item.subtopicos || item.subtopicos.length === 0">
+              <h4>{{ item.topico }}</h4>
+              <small class="conceitos-badge geral">
+                Busca Abrangente
+              </small>
+            </ng-container>
+          </div>
+
+          <div class="header-acoes">
+            <span class="badge-total">{{ item.quantidade }} questões no total</span>
+            <button (click)="onRemoverTopicoPorIndex(i)" class="btn-remover-topico">&times;</button>
+          </div>
+        </div>
+
+        <div class="grid-dificuldades" style="display: flex; gap: 15px; margin-top: 15px;">
+          <div class="form-group">
+            <label>Fáceis</label>
+            <input type="number" [(ngModel)]="item.quantidadeFaceis" (ngModelChange)="atualizarTotal(item)" min="0">
+          </div>
+          <div class="form-group">
+            <label>Médias</label>
+            <input type="number" [(ngModel)]="item.quantidadeMedias" (ngModelChange)="atualizarTotal(item)" min="0">
+          </div>
+          <div class="form-group">
+            <label>Difíceis</label>
+            <input type="number" [(ngModel)]="item.quantidadeDificeis" (ngModelChange)="atualizarTotal(item)" min="0">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-gerar-final" *ngIf="topicosSelecionados.length > 0">
+      <button (click)="onGerarProvaBanco()" [disabled]="isLoadingAdicionar">
+        <span *ngIf="!isLoadingAdicionar">2. Gerar Questões da Prova</span>
+        <span *ngIf="isLoadingAdicionar" class="loader"></span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- RESULTADOS -->
+  <main *ngIf="prova$ | async as prova">
+    <div class="secao-carrinho" *ngIf="prova.questoes.length > 0">
+      <hr class="separador-grande">
+      <h2>3. Questões Adicionadas à Prova ({{ prova.questoes.length }})</h2>
+
+      <div class="lista-questoes">
+        <div class="questao" *ngFor="let questao of prova.questoes; let i = index">
+
+        <div class="questao-badges">
+          <span class="badge badge-topico" *ngIf="questao.topico" title="Tópico da Questão">
+            <i class="fas fa-book"></i> {{ questao.topico }}
+          </span>
+          <span class="badge badge-conceito" *ngIf="questao.conceito" title="Conceito Específico">
+            <i class="fas fa-tag"></i> {{ questao.conceito }}
+          </span>
+          <span class="badge badge-nivel" *ngIf="questao.nivel" title="Nível de Dificuldade">
+            <i class="fas fa-layer-group"></i> {{ questao.nivel }}
+          </span>
+        </div>
+
+
+
+          <div class="campo-editavel">
+            <h3 *ngIf="!isEditando(i, 'enunciado')">
+              {{ i + 1 }}. {{ questao.enunciado }}
+              <button class="btn-icon-edit" (click)="ativarEdicao(i, 'enunciado')">✎</button>
+            </h3>
+            <div *ngIf="isEditando(i, 'enunciado')" class="edit-box">
+              <textarea [(ngModel)]="questao.enunciado" rows="3" class="form-control-inline"></textarea>
+              <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+            </div>
+          </div>
+
+          <ul *ngIf="questao.alternativas">
+            <li *ngFor="let alt of ['a','b','c','d','e']" class="campo-editavel">
+
+              <div *ngIf="!isEditando(i, alt)">
+                <strong>{{ alt.toUpperCase() }})</strong> {{ questao.alternativas[alt] }}
+                <button class="btn-icon-edit" (click)="ativarEdicao(i, alt)">✎</button>
+              </div>
+
+              <div *ngIf="isEditando(i, alt)" class="edit-box">
+                <input [(ngModel)]="questao.alternativas[alt]" class="form-control-inline">
+                <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="campo-editavel">
+            <p *ngIf="!isEditando(i, 'resposta')">
+              <strong>Resposta Correta:</strong> {{ questao.respostaCorreta }}
+              <button class="btn-icon-edit" (click)="ativarEdicao(i, 'resposta')">✎</button>
+            </p>
+            <div *ngIf="isEditando(i, 'resposta')" class="edit-box">
+              <label>Gabarito:</label>
+              <select [(ngModel)]="questao.respostaCorreta" class="form-control-inline-select">
+                <option *ngFor="let letra of ['A','B','C','D','E']" [value]="letra">{{ letra }}</option>
+              </select>
+              <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+            </div>
+          </div>
+
+          <div class="acoes-questao">
+            <button class="btn-descartar" (click)="onDescartarQuestao(i)" [disabled]="descartandoIndex === i">
+              <span *ngIf="descartandoIndex !== i">Descartar Questão</span>
+              <span *ngIf="descartandoIndex === i" class="loader"></span>
+            </button>
+
+            <button class="btn-comentarios" (click)="abrirComentarios(questao)">
+              Comentários
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <footer class="rodape-prova">
+        <hr>
+        <button class="btn-finalizar" (click)="executarAcoesFinais()" [disabled]="isLoadingFinalizar">
+          <span *ngIf="!isLoadingFinalizar">4. Salvar Prova e Exportar</span>
+          <span *ngIf="isLoadingFinalizar" class="loader"></span>
+        </button>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- MODAL COMENTÁRIOS -->
+  <div class="modal-backdrop" *ngIf="modalAberta" (click)="fecharModal()"></div>
+
+  <div class="modal" *ngIf="modalAberta">
+
+    <div class="modal-header">
+      <h2>Comentários Técnicos</h2>
+      <button class="btn-fechar" (click)="fecharModal()">✖</button>
+    </div>
+
+    <div class="modal-body" *ngIf="questaoSelecionada">
+
+      <div class="secao">
+        <h3>Competência Avaliada</h3>
+        <p>{{ questaoSelecionada.competencia }}</p>
+      </div>
+
+      <div class="secao">
+        <h3>Comentário Técnico</h3>
+        <p>{{ questaoSelecionada.comentarioTecnico }}</p>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,208 @@
+<div *ngIf="provaAtual as prova; else loading" class="prova-container">
+  
+  <!-- HEADER DA PROVA -->
+  <header class="detalhe-header">
+    <div class="info-prova">
+      <h1>{{ prova.titulo || 'Revisão da Prova' }}</h1>
+      <span class="badge-status">Modo de Edição</span>
+    </div>
+    
+    <div class="botoes-acao-global">
+      <button class="btn-outline" routerLink="/provas-salvas">Voltar</button>
+      <button class="btn-deletar" (click)="openDeleteModal()">🗑️ Excluir Prova</button>
+      <button class="btn-adicionar" (click)="abrirModalBuscaAvulsa()">+ Adicionar Questão</button>
+      <button class="btn-primario" (click)="salvarProvaFinal()">
+        <span *ngIf="!isSavingFinal">Salvar Versão Final</span>
+        <span *ngIf="isSavingFinal" class="loader-small"></span>
+      </button>
+    </div>
+  </header>
+
+  <hr>
+
+  <!-- LISTA DE QUESTÕES -->
+  <div class="lista-questoes" cdkDropList (cdkDropListDropped)="drop($event)">
+    
+    <div class="questao-card" *ngFor="let questao of prova.questoes; let i = index" cdkDrag>
+      
+      <!-- ESTADO 1: VISUALIZAÇÃO -->
+      <ng-container *ngIf="questaoEmEdicaoId !== questao.id">
+        <div class="questao-header">
+          <div class="arrastador" cdkDragHandle>⋮⋮</div>
+          <h3 class="enunciado"><span class="numero">{{ i + 1 }}.</span> {{ questao.enunciado }}</h3>
+          
+          <!-- Barra de Ferramentas -->
+          <div class="questao-toolbar">
+             <button title="Editar Texto" (click)="habilitarEdicao(questao)">✏️</button>
+             <button title="Trocar Questão" (click)="substituirQuestao(questao, i)" [disabled]="isSwapping[i]">
+                <span *ngIf="!isSwapping[i]">🔄</span>
+                <span *ngIf="isSwapping[i]" class="loader-small" style="border-color: var(--cor-primaria) transparent transparent transparent;"></span>
+              </button>
+              <button title="Buscar no Catálogo" (click)="abrirCatalogoManual(questao, i)" class="btn-catalogo">
+  🔍
+              </button>
+             <button title="Remover" class="btn-danger" (click)="removerQuestao(i)">🗑️</button>
+          </div>
+        </div>
+
+        <ul class="alternativas-lista" *ngIf="temAlternativasValidas(questao.alternativas)">
+          <li *ngFor="let key of objectKeys(questao.alternativas)" 
+              [class.correta]="key === questao.respostaCorreta">
+            <ng-container *ngIf="questao.alternativas[key]">
+              <strong>{{ key | uppercase }})</strong> {{ questao.alternativas[key] }}
+            </ng-container>
+          </li>
+        </ul>
+        <p><strong>Resposta Correta:</strong> {{ questao.respostaCorreta | uppercase }}</p>
+      </ng-container>
+
+      <!-- ESTADO 2: EDIÇÃO IN-LINE -->
+      <ng-container *ngIf="questaoEmEdicaoId === questao.id">
+        <div class="edicao-inline-box">
+          <label>Enunciado:</label>
+          <textarea [(ngModel)]="questaoRascunho.enunciado" rows="3"></textarea>
+          
+          <!-- Alternativas-->
+          <div *ngIf="questaoRascunho.alternativas" class="alternativas-edicao">
+            <label>Alternativas:</label>
+            <ng-container *ngFor="let key of ['a', 'b', 'c', 'd', 'e']">
+              <div class="alt-row" *ngIf="key !== 'e' || getTipoQuestaoEdicao() === 'M5'">
+                <span class="prefixo">{{ key | uppercase }})</span>
+                <input type="text" [(ngModel)]="questaoRascunho.alternativas[key]">
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- GABARITO DINÂMICO -->
+          <label style="margin-top: 1rem;">Resposta Correta:</label>
+          <select *ngIf="getTipoQuestaoEdicao() === 'M5'" [(ngModel)]="questaoRascunho.respostaCorreta">
+            <option value="" disabled>Selecione...</option>
+            <option value="a">Alternativa A</option>
+            <option value="b">Alternativa B</option>
+            <option value="c">Alternativa C</option>
+            <option value="d">Alternativa D</option>
+            <option value="e">Alternativa E</option>
+          </select>
+
+          <select *ngIf="getTipoQuestaoEdicao() === 'M4'" [(ngModel)]="questaoRascunho.respostaCorreta">
+            <option value="" disabled>Selecione...</option>
+            <option value="a">Alternativa A</option>
+            <option value="b">Alternativa B</option>
+            <option value="c">Alternativa C</option>
+            <option value="d">Alternativa D</option>
+          </select>
+
+          <select *ngIf="getTipoQuestaoEdicao() === 'VF'" [(ngModel)]="questaoRascunho.respostaCorreta">
+            <option value="" disabled>Selecione...</option>
+            <option value="V">Verdadeiro</option>
+            <option value="F">Falso</option>
+          </select>
+
+          <textarea *ngIf="getTipoQuestaoEdicao() === 'DISC'" 
+                    [(ngModel)]="questaoRascunho.respostaCorreta" 
+                    rows="3" 
+                    placeholder="Digite o gabarito ou explicação...">
+          </textarea>
+
+          <div class="edicao-footer">
+            <button class="btn-cancelar" (click)="cancelarEdicao()">Cancelar</button>
+            <button class="btn-salvar" (click)="confirmarEdicaoInLine(i)">Confirmar</button>
+          </div>
+        </div>
+      </ng-container>
+
+    </div>
+  </div>
+</div>
+
+<!--ng-template-->
+<ng-template #loading>
+  <div style="padding: 2rem; text-align: center;">
+    <p>Carregando detalhes da prova...</p>
+    <span class="loader-small"></span>
+  </div>
+</ng-template>
+
+
+
+<!-- MODAL / OFFCANVAS DO CATÁLOGO DE SUBSTITUIÇÃO -->
+<div class="modal-overlay" *ngIf="isCatalogoAberto">
+  <div class="offcanvas-catalogo">
+    
+    <div class="catalogo-header">
+      <div class="header-titulos">
+        <h3>Substituição Manual</h3>
+        <p class="subtitle">Buscando questões para o conceito: <strong>{{ conceitoAtualCatalogo }}</strong></p>
+      </div>
+      <button class="btn-fechar-catalogo" (click)="fecharCatalogo()">✕</button>
+    </div>
+
+    <div class="catalogo-body">
+      <!-- Loading do Catálogo -->
+      <div *ngIf="isBuscandoCatalogo" class="loading-state">
+        <span class="spinner-large"></span>
+        <p>Procurando alternativas no banco...</p>
+      </div>
+
+      <!-- Estado Vazio -->
+      <div *ngIf="!isBuscandoCatalogo && questoesCatalogo.length === 0" class="empty-state">
+        <span class="emoji-sad">📭</span>
+        <p>O banco está sem questões inéditas para este assunto.</p>
+        <button class="btn-primario" (click)="fecharCatalogoEChamarIa()">Gerar Inédita com IA</button>
+      </div>
+
+      <!-- Lista de Questões -->
+      <div class="lista-catalogo" *ngIf="!isBuscandoCatalogo && questoesCatalogo.length > 0">
+        <div class="card-catalogo-item" *ngFor="let q of questoesCatalogo">
+          
+          <div class="card-info-topo">
+            <span class="badge-nivel">{{ q.nivel || 'N/A' }}</span>
+            <span class="badge-tipo">{{ 'MULTIPLA_ESCOLHA' }}</span>
+          </div>
+          
+          <p class="enunciado-catalogo">{{ q.enunciado }}</p>
+          
+          <ul class="alternativas-catalogo" *ngIf="temAlternativasValidas(q.alternativas)">
+            <li *ngFor="let key of objectKeys(q.alternativas)">
+              <strong>{{ key | uppercase }})</strong> {{ q.alternativas[key] }}
+            </li>
+          </ul>
+          
+          <div class="card-acao-inferior">
+            <button class="btn-selecionar-esta" (click)="selecionarQuestaoDoCatalogo(q)">
+              + Usar Esta Questão
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- MODAL DE CONFIRMAÇÃO DE EXCLUSÃO -->
+<div class="modal-overlay" *ngIf="isDeleteModalVisible">
+  <div class="modal-content">
+    <div class="modal-header-danger">
+      <h3>Excluir Prova?</h3>
+    </div>
+    <div class="modal-body">
+      <p>Tem certeza de que deseja excluir permanentemente a prova <strong>{{ provaAtual?.titulo }}</strong>?</p>
+      <p class="alerta-texto">Esta ação não poderá ser desfeita.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" (click)="closeDeleteModal()" [disabled]="isDeleting">Cancelar</button>
+      <button class="btn-danger-solid" (click)="onConfirmDelete()" [disabled]="isDeleting">
+        <span *ngIf="!isDeleting">Sim, Excluir</span>
+        <span *ngIf="isDeleting" class="loader-small"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+

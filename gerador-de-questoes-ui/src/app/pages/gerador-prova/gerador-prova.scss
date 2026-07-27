@@ -1,0 +1,167 @@
+:host {
+  display: block;
+}
+
+.container {
+  max-width: 800px;
+  margin: 4rem auto; /* Mais margem no topo para centralizar visualmente */
+  padding: 0 1.5rem;
+  text-align: center;
+}
+
+header {
+  margin-bottom: 3rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: var(--cor-secundaria);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+/* Grid dos Cards */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  justify-content: center;
+}
+
+/* O Card em si */
+.menu-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid var(--cor-borda);
+  border-radius: 12px;
+  padding: 2.5rem 1.5rem;
+  text-decoration: none;
+  color: var(--cor-texto);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--sombra-cartao);
+}
+
+.menu-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  border-color: var(--cor-primaria);
+}
+
+/* Ícones */
+.icon-container {
+  background-color: var(--cor-fundo);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.3s ease;
+  color: var(--cor-secundaria);
+}
+
+/* Cores específicas ao passar o mouse */
+.menu-card.auto:hover .icon-container {
+  background-color: #e6f0ff; /* Azul claro */
+  color: var(--cor-primaria);
+}
+
+.menu-card.manual:hover .icon-container {
+  background-color: #fff8e6; /* Amarelo/Laranja claro */
+  color: #fd7e14;
+}
+
+.card-content h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: var(--cor-secundaria);
+}
+
+.card-content p {
+  color: #6c757d;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.arrow {
+  margin-top: 1.5rem;
+  font-size: 1.5rem;
+  color: var(--cor-borda);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.menu-card:hover .arrow {
+  color: var(--cor-primaria);
+  transform: translateX(5px);
+}
+
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+
+  h1 {
+    font-size: 2rem;
+    color: #0f172a;
+    margin: 0;
+  }
+}
+
+/* Tag de identificação da disciplina */
+.discipline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1f5f9; 
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  animation: fadeIn 0.3s ease-out;
+
+  .tag-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+/* Estado de carregamento */
+.discipline-loading {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .spinner-micro {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }

@@ -1,0 +1,63 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Painel Principal</h1>
+    
+    <div class="discipline-tag" *ngIf="!carregando && disciplinaAtual">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ disciplinaAtual.nome }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregando">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </div>
+
+  <p class="subtitle">
+    Selecione uma ação para começar.<br>
+    Dica: se não tiver documentos cadastrados, comece cadastrando uma documentação.
+  </p>
+
+  <div class="card-grid">
+    <a class="card" [routerLink]="['/gerenciamento']">
+      <div class="icon-wrapper" style="background-color: #f1efef;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b0b0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      </div>
+      <h3>Documentação</h3>
+      <p>Insira documentos no sistema para começar a gerar novas questões.</p>
+    </a>
+
+    <a class="card" [routerLink]="['/gerar-prova']">
+      <div class="icon-wrapper" style="background-color: #e6f0ff;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cor-primaria)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </div>
+      <h3>Geração</h3>
+      <p>Clique aqui para começar a gerar novas questões e provas.</p>
+    </a>
+
+    <a class="card" [routerLink]="['/banco-questoes']">
+      <div class="icon-wrapper" style="background-color: #fff8e6;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffc107" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+      </div>
+      <h3>Banco de Questões</h3>
+      <p>Gerencie todas as suas questões cadastradas.</p>
+    </a>
+
+    <!-- NOVO CARD: Excluir Disciplina -->
+    <a class="card" (click)="excluirDisciplina()" style="border: 1px solid #fecaca; cursor: pointer;">
+      <div class="icon-wrapper" style="background-color: #fee2e2;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--cor-perigo, #dc2626)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+      </div>
+      <h3 style="color: #363636;">Excluir Disciplina</h3>
+      <p>Apague permanentemente este ambiente de estudos e todos os seus dados.</p>
+    </a>
+
+
+  </div>
+
+
+</div>

@@ -1,0 +1,124 @@
+<div class="container">
+  
+  <header class="dashboard-header" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <h1 style="margin: 0;">Extração de Questões</h1>
+    
+    <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </header>
+
+  <p class="subtitle">Suba PDFs de provas antigas para o Elaborar processar com Inteligência Artificial.</p>
+
+  <div class="menu-grid" style="grid-template-columns: 1fr; max-width: 600px; margin: 0 auto;">
+    
+    <div class="menu-card btn-abrir-modal" (click)="abrirModalExtracao()" style="cursor: pointer; transition: transform 0.2s; text-align: center; padding: 40px 20px;">
+      <div class="card-header" style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+        <div class="icon-circle primary" style="width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; border-radius: 50%; background-color: #e6f0ff; color: var(--cor-primaria);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        </div>
+        <h2 style="font-size: 1.5rem; margin: 0;">Iniciar Nova Extração</h2>
+        <p style="color: #6c757d; margin: 0;">Clique aqui para fazer upload do PDF e configurar as instruções da IA.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="isExtracaoModalOpen">
+  <div class="modal-box" style="max-width: 600px; width: 95%;">
+    
+    <div class="modal-header">
+      <h3>Configurar Extração de Prova</h3>
+      <button class="btn-fechar" (click)="fecharModalExtracao()" [disabled]="isUploading">✕</button>
+    </div>
+    
+    <div class="modal-content" style="padding: 20px;">
+      
+      <!-- Passo 1: Upload -->
+      <div class="form-group mb-4">
+        <label style="font-weight: 600; color: #495057; margin-bottom: 8px; display: block;">1. Selecione o arquivo PDF (*)</label>
+        
+        <div class="dropzone" *ngIf="!arquivoQuestoes" 
+             (drop)="onDrop($event)" 
+             (dragover)="onDragOver($event)"
+             (dragleave)="onDragLeave($event)"
+             [class.drag-over]="isHovering"
+             style="border: 2px dashed #ced4da; padding: 30px; text-align: center; border-radius: 8px; background: #f8f9fa;">
+            <p style="color: #6c757d; margin-bottom: 15px;">Arraste o PDF da Prova aqui</p>
+            <label for="fileQuestoes" class="btn-selecionar" style="background: white; border: 1px solid var(--cor-primaria); color: var(--cor-primaria); padding: 8px 16px; border-radius: 4px; cursor: pointer;">Procurar no computador</label>
+            <input type="file" id="fileQuestoes" (change)="onFileSelected($event)" accept=".pdf" hidden>
+        </div>
+
+        <div class="arquivo-selecionado" *ngIf="arquivoQuestoes" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px;">
+          <span style="font-weight: 500; color: #2e7d32;">📄 {{ arquivoQuestoes.name }}</span>
+          <button (click)="removerArquivo()" class="btn-remover" [disabled]="isUploading" style="background: none; border: none; color: #d32f2f; font-size: 1.2rem; cursor: pointer;">&times;</button>
+        </div>
+      </div>
+
+      <!-- Passo 2: Formato de Saída (NOVO BLOCO) -->
+      <div class="form-group mb-4" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+        <label style="font-weight: 600; color: #495057; margin-bottom: 12px; display: block;">2. Formato de Saída (*)</label>
+        
+        <div class="radio-group" style="display: flex; flex-direction: column; gap: 12px; margin-left: 10px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #495057;">
+            <input type="radio" name="modoExtracao" [(ngModel)]="modoExtracao" value="APENAS_ORIGINAIS" [disabled]="isUploading" style="width: 16px; height: 16px;">
+            <span><strong>Apenas Originais</strong> (Mais rápido, mantém exatamente como no PDF)</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #495057;">
+            <input type="radio" name="modoExtracao" [(ngModel)]="modoExtracao" value="ORIGINAIS_E_VARIACOES" [disabled]="isUploading" style="width: 16px; height: 16px;">
+            <span><strong>Originais + 1 Variação</strong> (Salva a original e gera uma inédita)</span>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: #495057;">
+            <input type="radio" name="modoExtracao" [(ngModel)]="modoExtracao" value="APENAS_VARIACOES" [disabled]="isUploading" style="width: 16px; height: 16px;">
+            <span><strong>Apenas Variações Inéditas</strong> (Descarta a original e gera 2 inéditas)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Passo 3: Prompt Personalizado -->
+      <div class="form-group" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: #495057;">
+          <input type="checkbox" [(ngModel)]="usarPromptPersonalizado" style="width: 18px; height: 18px; cursor: pointer;">
+          3. Usar instruções personalizadas para a IA? (Opcional)
+        </label>
+        
+        <p style="font-size: 0.85rem; color: #6c757d; margin-top: 5px; margin-left: 28px;">
+          Marque esta opção se desejar orientar a IA sobre como ler uma formatação específica desta prova.
+        </p>
+
+        <div class="prompt-area" *ngIf="usarPromptPersonalizado" style="margin-top: 15px; margin-left: 28px; animation: fadeIn 0.3s ease-in-out;">
+          <textarea 
+            [(ngModel)]="promptPersonalizado" 
+            rows="4" 
+            placeholder="Ex: Por favor, ignore os textos motivadores longos. As questões começam sempre com a palavra 'QUESTÃO' em negrito. Concentre-se apenas nas questões de Raciocínio Lógico."
+            style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-family: inherit; resize: vertical;"
+            [disabled]="isUploading"
+          ></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #dee2e6; display: flex; justify-content: flex-end; gap: 10px; background: #f8f9fa; border-radius: 0 0 8px 8px;">
+      <button class="btn-cancelar" (click)="fecharModalExtracao()" [disabled]="isUploading" style="padding: 10px 20px; border: 1px solid #ced4da; background: white; border-radius: 6px; cursor: pointer;">Cancelar</button>
+      
+      <button class="btn-upload" (click)="iniciarProcessamento()" [disabled]="!arquivoQuestoes || isUploading || !modoExtracao" style="padding: 10px 20px; background: var(--cor-primaria); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <span *ngIf="!isUploading">Enviar para Extração</span>
+        <div *ngIf="isUploading" class="loader-container" style="display: flex; align-items: center; gap: 8px;">
+          <span class="loader-small"></span>
+          <span>Processando...</span>
+        </div>
+      </button>
+    </div>
+
+  </div>
+</div>

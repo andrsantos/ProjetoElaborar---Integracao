@@ -1,0 +1,156 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { Prova } from '../../models/prova.model';
+import { GerarQuestaoRequest } from '../../models/gerar-questao-request.model';
+import { ProvaInfo } from '../../models/prova-info.model';
+import { ProvaSalva } from '../../models/prova-entity.model';
+import { TopicoQuantidade } from '../../models/topico-quantidade.model';
+import { Questao } from '../../models/questao.model';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class ProvaService {
+
+  private readonly API_URL = 'http://localhost:8080/api/provas';
+  private readonly API_URL_SALVAS = 'http://localhost:8080/api/provas-salvas';
+  private readonly API_URL_TOPICOS = 'http://localhost:8080/api/topicos'; 
+  private readonly API_QUESTOES_GERAR = 'http://localhost:8080/api/questoes/gerar'; 
+
+  constructor(private http: HttpClient) {}
+
+
+  criarProva(disciplinaId: string): Observable<Prova> {
+    return this.http.post<Prova>(`${this.API_URL}?disciplinaId=${disciplinaId}`, {});
+  }
+
+  salvarProvaNoBanco(prova: Prova): Observable<any> {
+    return this.http.post<any>(this.API_URL_SALVAS, prova);
+  }
+
+  getProva(id: string): Observable<Prova> {
+    return this.http.get<Prova>(`${this.API_URL}/${id}`);
+  }
+
+  atualizarQuestaoExistente(id: string, questao: Questao): Observable<any> {
+    return this.http.put(`${this.API_URL_SALVAS}/questoes/${id}`, questao);
+  }
+
+  adicionarQuestoes(id: string, request: GerarQuestaoRequest): Observable<Prova> {
+    return this.http.post<Prova>(`${this.API_URL}/${id}/questoes`, request);
+  }
+
+
+  gerarProvaBanco(id: string, documentosPayload: any[]): Observable<Prova> {
+    const request = { documentos: documentosPayload }; 
+    console.log("Request gerarProvaBanco:", request);
+    return this.http.post<Prova>(`${this.API_URL}/${id}/prova-banco`, request);
+  }
+
+  adicionarQuestoesAutomatico(id: string, blocos: any[]): Observable<Prova> {
+      const request = { documentos: blocos };
+      
+      console.log("Payload enviado para o Java:", request);
+      
+      return this.http.post<Prova>(`${this.API_URL}/${id}/questoes-automaticas`, request);
+  }
+
+  descartarQuestao(id: string, indice: number): Observable<Prova> {
+    const params = new HttpParams().set('indice', indice.toString());
+    return this.http.delete<Prova>(`${this.API_URL}/${id}/questoes`, { params });
+  }
+
+  finalizarProvaPdf(id: string): Observable<Blob> {
+    return this.http.post(`${this.API_URL}/${id}/finalizar-pdf`, {}, {
+      responseType: 'blob' 
+    });
+  }
+
+  getProvasSalvas(): Observable<ProvaInfo[]> {
+    return this.http.get<ProvaInfo[]>(this.API_URL_SALVAS);
+  }
+
+  getDetalheProva(id: string): Observable<ProvaSalva> {
+    return this.http.get<ProvaSalva>(`${this.API_URL_SALVAS}/${id}`);
+  }
+
+  deleteProva(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL_SALVAS}/${id}`);
+  }
+
+  downloadProvaSalvaPdf(id: string): Observable<Blob> {
+    return this.http.get(`${this.API_URL_SALVAS}/${id}/download-pdf`, {
+      responseType: 'blob' 
+    });
+  }
+
+
+  getTopicosDisponiveis(id: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.API_URL_TOPICOS}?disciplinaId=${id}`);
+  }
+
+  getConceitosPorTopico(topico: string): Observable<string[]> {
+    const url = `${this.API_URL_TOPICOS}/${encodeURIComponent(topico)}/conceitos`;
+    return this.http.get<string[]>(url);
+  }
+
+
+  gerarQuestaoAvulsa(topico: string, quantidade: number = 1): Observable<any> {
+    return this.http.post<any>(this.API_QUESTOES_GERAR, { 
+      topico: topico, 
+      quantidade: quantidade 
+    });
+  }
+
+
+  salvarProvaManual(id: string, questoes: Questao[]): Observable<Prova> {
+    return this.http.post<Prova>(`${this.API_URL}/${id}/manual`, questoes);
+  }
+
+  getConceitosPorDocumento(documentoId: string): Observable<string[]> {
+    return this.http.get<string[]>(`http://localhost:8080/api/documentos/${documentoId}/conceitos`);
+  }
+
+  gerarProvaExpressa(payload: any): Observable<any> {
+    return this.http.post<any>(`http://localhost:8080/api/provas/expressa`, payload);
+  }
+
+
+  substituirQuestaoPorAleatoria(disciplinaId: string, conceito: string, idsExcluidos: string[]): Observable<Questao> {
+    const payload = {
+      disciplinaId: disciplinaId,
+      conceito: conceito, 
+      idsExcluidos: idsExcluidos
+    };
+
+    return this.http.post<Questao>(`${this.API_URL_SALVAS}/substituir-aleatoria`, payload);
+  }
+
+  gerarQuestaoSubstitutaIa(disciplinaId: string, conceito: string, enunciadoAntigo: string): Observable<Questao> {
+    const payload = {
+      disciplinaId: disciplinaId,
+      conceito: conceito,
+      enunciadoAntigo: enunciadoAntigo,
+      nivel: 'MEDIO'
+    };
+
+    return this.http.post<Questao>(`${this.API_URL_SALVAS}/gerar-substituta-ia`, payload);
+  }
+
+  buscarCatalogoSubstituicao(disciplinaId: string, conceito: string, idsExcluidos: string[]): Observable<Questao[]> {
+    const payload = {
+      disciplinaId: disciplinaId,
+      conceito: conceito,
+      idsExcluidos: idsExcluidos
+    };
+    return this.http.post<Questao[]>(`${this.API_URL_SALVAS}/catalogo-substituicao`, payload);
+  }
+
+  
+
+
+
+
+
+}

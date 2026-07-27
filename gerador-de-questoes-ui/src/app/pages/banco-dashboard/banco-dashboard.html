@@ -1,0 +1,54 @@
+<div class="container">
+    <header class="dashboard-header" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <h1 style="margin: 0;">Banco de Questões</h1>
+    
+    <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </header>
+
+
+  <div class="menu-grid">
+    
+    <!-- CARD 1: CADASTRAR -->
+    <!-- <a [routerLink]="['/banco-questoes/novo']" class="menu-card criar">
+      <div class="icon-container">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+      </div>
+      <div class="card-content">
+        <h2>Cadastrar Nova Questão</h2>
+        <p>Adicione manualmente uma questão ao banco (Múltipla escolha, V/F, etc).</p>
+      </div>
+      <span class="arrow">&rarr;</span>
+    </a> -->
+
+    <!-- CARD 2: GERENCIAR -->
+    <a [routerLink]="['/banco-questoes/gerenciar']" class="menu-card gerenciar">
+      <div class="icon-container">
+        <!-- Ícone de Lista/Gerenciar -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+          <polyline points="10 9 9 9 8 9"></polyline>
+        </svg>
+      </div>
+      <div class="card-content">
+        <h2>Gerenciar Banco</h2>
+        <p>Aqui você pode visualizar, editar, excluir e cadastrar questões</p>
+      </div>
+      <span class="arrow">&rarr;</span>
+    </a>
+
+  </div>
+</div>

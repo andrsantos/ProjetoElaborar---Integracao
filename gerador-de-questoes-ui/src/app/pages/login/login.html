@@ -1,0 +1,58 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <!-- Espaço para um futuro logo ou ícone -->
+      <div class="brand-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5"></path>
+          <path d="M2 12l10 5 10-5"></path>
+        </svg>
+      </div>
+      <h2>Bem-vindo ao Elaborar</h2>
+      <p>Faça login para acessar sua conta</p>
+    </div>
+
+    <!-- A sua lógica de formulário mantida intacta -->
+    <form (ngSubmit)="fazerLogin()" class="login-form">
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <div class="input-wrapper">
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            class="form-control" 
+            [(ngModel)]="credenciais.email" 
+            placeholder="professor@exemplo.com"
+            required
+            [disabled]="isLoading">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="senha">Senha</label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="senha" 
+            name="senha" 
+            class="form-control" 
+            [(ngModel)]="credenciais.senha" 
+            placeholder="••••••••"
+            required
+            [disabled]="isLoading">
+        </div>
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Entrar</span>
+        <span *ngIf="isLoading" class="spinner-small"></span>
+      </button>
+    </form>
+
+    <!-- <div class="login-footer">
+      <p>Ainda não tem uma conta? <a routerLink="/registrar">Registre-se aqui</a></p>
+    </div> -->
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<div class="workspace-container">
+  
+  <div class="workspace-header">
+    <div class="header-titles">
+      <h2 class="title">Ambientes de Estudo</h2>
+      <p class="subtitle">Selecione uma disciplina para gerenciar seu banco de questões e gerar provas.</p>
+    </div>
+    
+    <button class="btn-primary-outline" (click)="abrirModalNovaDisciplina()">
+      <i class="fas fa-plus"></i> Nova Disciplina
+    </button>
+  </div>
+
+  <div *ngIf="carregando" class="loader-container">
+    <span class="loader-small"></span> Carregando suas disciplinas...
+  </div>
+
+  <div class="empty-state-container" *ngIf="!carregando && (!disciplinas || disciplinas.length === 0)">
+    <div class="empty-state-content">
+      <div class="empty-icon-wrapper">
+        <i class="fas fa-layer-group"></i>
+      </div>
+      <h3>Nenhuma disciplina encontrada</h3>
+      <p>Você ainda não possui ambientes de estudo criados no sistema.</p>
+      <button class="btn-primary" (click)="abrirModalNovaDisciplina()">
+        <i class="fas fa-plus"></i> Cadastrar Primeira Disciplina
+      </button>
+    </div>
+  </div>
+
+  <div class="cards-grid" *ngIf="!carregando && disciplinas && disciplinas.length > 0">
+    
+    <div class="action-card discipline-card" *ngFor="let d of disciplinas" (click)="entrarNaDisciplina(d.id!)">
+      <div class="card-decoration"></div>
+      
+      <div class="card-header-flex">
+        <div class="discipline-icon">
+          <i class="fas fa-book-open"></i>
+        </div>
+        <div class="card-action-icon">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+
+      <div class="card-content">
+        <h3>{{ d.nome }}</h3>
+        <p>Acessar painel e banco de questões</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-overlay" *ngIf="exibirModal" (click)="fecharModal()">
+  
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Criar Novo Ambiente</h3>
+      <button class="close-btn" (click)="fecharModal()"><i class="fas fa-times"></i></button>
+    </div>
+
+    <form [formGroup]="disciplinaForm" (ngSubmit)="salvarDisciplina()">
+      <div class="form-group">
+        <label for="nome">Nome da Disciplina <span class="required">*</span></label>
+        <input type="text" id="nome" formControlName="nome" placeholder="Ex: Redes de Computadores" autocomplete="off">
+        <small class="error-text" *ngIf="disciplinaForm.get('nome')?.touched && disciplinaForm.get('nome')?.invalid">
+          O nome é obrigatório e deve ter pelo menos 3 caracteres.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="descricao">Descrição (Opcional)</label>
+        <textarea id="descricao" formControlName="descricao" rows="3" placeholder="Foco principal, bibliografia, etc."></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn-primary" [disabled]="disciplinaForm.invalid || salvando">
+          <span *ngIf="salvando" class="loader-micro"></span>
+          {{ salvando ? 'Salvando...' : 'Criar Ambiente' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+</div>

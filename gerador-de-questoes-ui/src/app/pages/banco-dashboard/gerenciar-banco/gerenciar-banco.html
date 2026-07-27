@@ -1,0 +1,271 @@
+<div class="container">
+
+  <header>
+    <div class="dashboard-header" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0;">Gerenciar Banco de Questões</h1>
+      
+      <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+        <span class="tag-label">Disciplina:</span>
+        <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+      </div>
+
+      <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+        <span class="spinner-micro"></span> Carregando ambiente...
+      </div>
+    </div>
+
+
+    <div class="header-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <p class="subtitle" style="margin: 0;">Visualize, edite ou exclua suas questões cadastradas.</p>
+      
+      <div class="contador-questoes" *ngIf="!isLoading && questoesExibidas">
+        <span style="background-color: #e6f2ff; color: #007bff; padding: 6px 14px; border-radius: 20px; font-weight: 500; font-size: 13px; display: inline-block;">
+          {{ questoesExibidas.length }} {{ questoesExibidas.length === 1 ? 'questão encontrada' : 'questões encontradas' }}
+        </span>
+      </div>
+    </div>
+
+
+    <div class="controls-bar" *ngIf="questoes && questoes.length > 0">
+      <button class="btn-cadastrar" (click)="abrirCadastro()">
+        + Cadastrar Questão
+      </button>
+
+      <div class="search-container">
+        <input 
+          type="text" 
+          placeholder="Pesquisar enunciado..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          class="search-input"
+        >
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <div class="filters-group">
+        <div class="filter-item">
+          <input 
+            type="date" 
+            [(ngModel)]="dataFiltro" 
+            (change)="onDataChange()"
+            class="date-input"
+            title="Filtrar por data de criação"
+          >
+        </div>
+
+
+        <div class="filter-item custom-dropdown-wrapper" #dropdownConceito>
+          <div class="custom-select-container">
+            
+            <div class="custom-select-header" (click)="toggleDropdownConceito()">
+              <span class="selected-text" [title]="conceitoSelecionado || 'Todos os Conceitos'">
+                {{ conceitoSelecionado || 'Todos os Conceitos' }}
+              </span>
+              <span class="dropdown-arrow">{{ dropdownConceitoAberto ? '▲' : '▼' }}</span>
+            </div>
+
+            <div class="custom-select-options" *ngIf="dropdownConceitoAberto">
+              <div class="custom-option" (click)="selecionarConceito('')" [class.selected]="conceitoSelecionado === ''">
+                Todos os Conceitos
+              </div>
+              
+              <div class="custom-option" *ngFor="let c of conceitosDisponiveis" 
+                   (click)="selecionarConceito(c)" 
+                   [class.selected]="conceitoSelecionado === c"
+                   [title]="c">
+                {{ c }}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="filter-item">
+          <select id="filterNivel" [(ngModel)]="nivelSelecionado" (change)="onNivelChange()">
+            <option value="">Todos os Níveis</option>
+            <option value="UNIVERSITARIO_INICIANTE">Iniciante</option>
+            <option value="UNIVERSITARIO_INTERMEDIARIO">Intermediário</option>
+            <option value="UNIVERSITARIO_AVANCADO">Avançado</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <select id="sortOrder" (change)="onOrderChange($event)">
+            <option value="desc">Mais recentes</option>
+            <option value="asc">Mais antigas</option>
+          </select>
+        </div>
+
+        <div class="filter-item" *ngIf="dataFiltro || topicoSelecionado || conceitoSelecionado || nivelSelecionado || searchTerm">
+          <button class="btn-limpar-filtros" (click)="limparFiltros()">
+            <span class="icon">🧹</span> Limpar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div *ngIf="isLoading" class="loading">
+    Carregando questões...
+  </div>
+
+  <div class="empty-state-container" *ngIf="!isLoading && (!questoesExibidas || questoesExibidas.length === 0)" 
+       style="text-align: center; padding: 60px 20px; background: #f8f9fa; border: 2px dashed #ced4da; border-radius: 8px; margin-top: 20px;">
+    
+    <div style="font-size: 3.5rem; color: #adb5bd; margin-bottom: 15px;">📭</div>
+    
+    <h3 style="color: #495057; margin-bottom: 10px; font-size: 1.4rem;">Nenhuma questão encontrada</h3>
+    <p style="color: #6c757d; margin-bottom: 25px; font-size: 1rem;">
+      O seu banco de questões está vazio ou nenhuma questão corresponde aos filtros aplicados na pesquisa.
+    </p>
+    
+    <button class="btn-cadastrar" (click)="abrirCadastro()" style="padding: 12px 24px; font-size: 1rem;">
+      + Cadastrar Primeira Questão
+    </button>
+  </div>
+
+  <div class="lista-questoes" *ngIf="!isLoading">
+    <div class="card-questao" *ngFor="let q of questoesExibidas; let i = index">
+      <div class="card-header">
+        <div class="badges">
+          <span class="badge-tipo">{{ q.tipo }}</span>
+          <span class="badge-topico">{{ q.topico }}</span>
+          <span class="badge-topico">{{ q.conceito }}</span>
+          <span class="badge-topico">{{ q.nivel }}</span>
+        </div>
+        <div class="data-postagem">
+          <small>Inserida em: {{ q.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</small>
+        </div>
+      </div>
+
+      <div class="campo-editavel" style="margin-top: 15px;">
+        <div class="enunciado" *ngIf="!isEditando(i, 'enunciado')">
+          {{ q.enunciado }}
+          <button class="btn-icon-edit" (click)="ativarEdicao(i, 'enunciado')" title="Editar Enunciado">✎</button>
+        </div>
+        <div *ngIf="isEditando(i, 'enunciado')" class="edit-box">
+          <textarea [(ngModel)]="q.enunciado" rows="4" class="form-control-inline" style="width: 100%;"></textarea>
+          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, 'enunciado')">OK</button>
+        </div>
+      </div>
+
+      <div class="area-alternativas" *ngIf="q.tipo === 'MULTIPLA_ESCOLHA_4' || q.tipo === 'MULTIPLA_ESCOLHA_5'">
+        <div class="alternativa campo-editavel" *ngFor="let key of objectKeys(q.alternativas)">
+          <ng-container *ngIf="q.alternativas[key]">
+            <div *ngIf="!isEditando(i, key)">
+              <span class="letra">{{ key | uppercase }})</span>
+              <span class="texto">{{ q.alternativas[key] }}</span>
+              <button class="btn-icon-edit" (click)="ativarEdicao(i, key)" title="Editar Alternativa">✎</button>
+            </div>
+
+            <div *ngIf="isEditando(i, key)" class="edit-box">
+              <span class="letra">{{ key | uppercase }})</span>
+              <input [(ngModel)]="q.alternativas[key]" class="form-control-inline" style="width: 80%;">
+              <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, key)">OK</button>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <div class="campo-editavel" style="margin-top: 15px;">
+        <div class="gabarito" *ngIf="!isEditando(i, 'resposta')">
+          <strong>Resposta Correta:</strong> {{ q.respostaCorreta | uppercase }}
+          <button class="btn-icon-edit" (click)="ativarEdicao(i, 'resposta')" title="Editar Gabarito">✎</button>
+        </div>
+        <div *ngIf="isEditando(i, 'resposta')" class="edit-box">
+          <label>Gabarito:</label>
+          <select [(ngModel)]="q.respostaCorreta" class="form-control-inline-select">
+            <option value="a">A</option>
+            <option value="b">B</option>
+            <option value="c">C</option>
+            <option value="d">D</option>
+            <option value="e" *ngIf="q.tipo === 'MULTIPLA_ESCOLHA_5'">E</option>
+          </select>
+          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, 'resposta')">OK</button>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="btn-comentarios" (click)="abrirComentarios(q)">
+          Comentários
+        </button>
+        <button class="btn-excluir" (click)="onExcluir(q.id)">
+          Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="isComentarioModalOpen && questaoComentario">
+  <div class="modal-box modal-comentarios">
+    <div class="modal-header">
+      <h3>Comentários Técnicos da Questão</h3>
+      <button class="btn-fechar" (click)="fecharComentarios()">✕</button>
+    </div>
+    <div class="modal-content">
+      <div class="secao">
+        <h4>Competência Avaliada</h4>
+        <p class="competencia">{{ questaoComentario.competencia || 'Não informada' }}</p>
+      </div>
+      <div class="secao">
+        <h4>Comentário Técnico</h4>
+        <div class="comentario-texto">{{ questaoComentario.comentarioTecnico || 'Nenhum comentário disponível.' }}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-fechar-modal" (click)="fecharComentarios()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="isCadastroModalOpen">
+  <div class="modal-box modal-cadastro">
+    <div class="modal-header">
+      <h3>{{ isModoEdicao ? 'Editar Questão' : 'Cadastrar Nova Questão' }}</h3>
+      <button class="btn-fechar" (click)="fecharCadastro()">✕</button>
+    </div>
+    <div class="modal-content">
+      <div class="form-group">
+        <label>Tópico(*)</label>
+        <input [(ngModel)]="novaQuestao.topico" type="text">
+      </div>
+      <div class="form-group">
+        <label>Enunciado(*)</label>
+        <textarea [(ngModel)]="novaQuestao.enunciado" rows="4"></textarea>
+      </div>
+      <div class="area-alternativas-form">
+        <h4>Alternativas(*)</h4>
+        <div class="input-group" *ngFor="let letra of ['a','b','c','d','e']">
+          <span>{{ letra | uppercase }})</span>
+          <input [(ngModel)]="novaQuestao.alternativas[letra]">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Resposta Correta(*)</label>
+        <select [(ngModel)]="novaQuestao.respostaCorreta">
+          <option value="">Selecione</option>
+          <option *ngFor="let letra of ['a','b','c','d','e']" [value]="letra">{{ letra | uppercase }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Competência(Opcional)</label>
+        <input [(ngModel)]="novaQuestao.competencia">
+      </div>
+      <div class="form-group">
+        <label>Conceito(*)</label>
+        <textarea [(ngModel)]="novaQuestao.conceito" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Comentário Técnico(Opcional)</label>
+        <textarea [(ngModel)]="novaQuestao.comentarioTecnico" rows="4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" (click)="fecharCadastro()">Cancelar</button>
+      <button class="btn-salvar" (click)="salvarQuestao()">
+        {{ isModoEdicao ? 'Salvar Alterações' : 'Cadastrar' }}
+      </button>
+    </div>
+  </div>
+</div>

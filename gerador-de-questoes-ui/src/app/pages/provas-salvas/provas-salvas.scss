@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.container {
+  max-width: 1000px;
+}
+
+h1 {
+  margin-top: 0;
+  color: var(--cor-secundaria);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 2rem;
+}
+
+/* Estado de "lista vazia" */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--cor-cartao);
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio-borda);
+}
+
+/* Grid de cards (similar ao Dashboard) */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  display: block;
+  background-color: var(--cor-cartao);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-borda);
+  padding: 1.5rem;
+  box-shadow: var(--sombra-cartao);
+  text-decoration: none;
+  color: var(--cor-texto);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative; /* Para o link de detalhe */
+  padding-bottom: 4rem; /* Espaço para o "clique para ver" */
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--cor-primaria);
+}
+
+.card p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: #6c757d;
+}
+
+.card p strong {
+  color: var(--cor-texto);
+}
+
+.link-detalhe {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  font-weight: 500;
+  color: var(--cor-primaria);
+}
+
+
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+
+  h1 {
+    font-size: 2rem;
+    color: #0f172a;
+    margin: 0;
+  }
+}
+
+/* Tag de identificação da disciplina */
+.discipline-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #f1f5f9; 
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  width: fit-content;
+  animation: fadeIn 0.3s ease-out;
+
+  .tag-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+/* Estado de carregamento */
+.discipline-loading {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .spinner-micro {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }

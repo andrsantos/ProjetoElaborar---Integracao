@@ -1,0 +1,190 @@
+<div class="container">
+  <header>
+    <h1>Banco de Questões</h1>
+    <p class="subtitle">Cadastre questões manualmente para usar em futuras provas.</p>
+  </header>
+
+  <div class="form-secao">
+    
+    <!-- SELETOR DE TIPO -->
+    <div class="form-row">
+      <label>Tipo de Questão:</label>
+      <select [(ngModel)]="tipoSelecionado">
+        <option value="" disabled selected>Selecione...</option>
+        <option *ngFor="let t of tipos" [value]="t.valor">{{ t.label }}</option>
+      </select>
+    </div>
+
+    <hr>
+
+    <!-- 
+      FORMULÁRIO - MÚLTIPLA ESCOLHA 4 ALTERNATIVAS
+      Só aparece se o tipo for MULTIPLA_ESCOLHA_4
+    -->
+    <div *ngIf="tipoSelecionado === 'MULTIPLA_ESCOLHA_4'" class="form-especifico">
+      
+      <div class="form-row">
+        <label>Tópico (Matéria):</label>
+        <input type="text" [(ngModel)]="novaQuestao.topico" placeholder="Ex: Camada de Transporte">
+      </div>
+
+      <div class="form-row full-width">
+        <label>Enunciado:</label>
+        <textarea [(ngModel)]="novaQuestao.enunciado" rows="3" placeholder="Digite a pergunta aqui..."></textarea>
+      </div>
+
+      <div class="alternativas-grid">
+        <div class="input-alt">
+          <span>A)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaA">
+        </div>
+        <div class="input-alt">
+          <span>B)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaB">
+        </div>
+        <div class="input-alt">
+          <span>C)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaC">
+        </div>
+        <div class="input-alt">
+          <span>D)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaD">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Gabarito (Correta):</label>
+        <select [(ngModel)]="novaQuestao.respostaCorreta" class="select-gabarito">
+          <option value="" disabled>Selecione...</option>
+          <option value="a">Alternativa A</option>
+          <option value="b">Alternativa B</option>
+          <option value="c">Alternativa C</option>
+          <option value="d">Alternativa D</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn-salvar" (click)="onSalvar()" [disabled]="isSaving">
+          <span *ngIf="!isSaving">Cadastrar Questão</span>
+          <span *ngIf="isSaving" class="loader"></span>
+        </button>
+      </div>
+      </div>
+
+      <!-- FORMULÁRIO - MÚLTIPLA ESCOLHA 5 ALTERNATIVAS-->
+      <div *ngIf="tipoSelecionado === 'MULTIPLA_ESCOLHA_5'" class="form-especifico">
+      
+      <div class="form-row">
+        <label>Tópico (Matéria):</label>
+        <input type="text" [(ngModel)]="novaQuestao.topico" placeholder="Ex: Camada de Transporte">
+      </div>
+
+      <div class="form-row full-width">
+        <label>Enunciado:</label>
+        <textarea [(ngModel)]="novaQuestao.enunciado" rows="3" placeholder="Digite a pergunta aqui..."></textarea>
+      </div>
+
+      <div class="alternativas-grid">
+        <div class="input-alt">
+          <span>A)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaA">
+        </div>
+        <div class="input-alt">
+          <span>B)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaB">
+        </div>
+        <div class="input-alt">
+          <span>C)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaC">
+        </div>
+        <div class="input-alt">
+          <span>D)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaD">
+        </div>
+        <div class="input-alt">
+          <span>E)</span>
+          <input type="text" [(ngModel)]="novaQuestao.alternativaE">
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Gabarito (Correta):</label>
+        <select [(ngModel)]="novaQuestao.respostaCorreta" class="select-gabarito">
+          <option value="" disabled>Selecione...</option>
+          <option value="a">Alternativa A</option>
+          <option value="b">Alternativa B</option>
+          <option value="c">Alternativa C</option>
+          <option value="d">Alternativa D</option>
+          <option value="e">Alternativa E</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn-salvar" (click)="onSalvar()" [disabled]="isSaving">
+          <span *ngIf="!isSaving">Cadastrar Questão</span>
+          <span *ngIf="isSaving" class="loader"></span>
+        </button>
+      </div>
+      </div>
+
+      <!-- FORMULÁRIO - VERDADEIRO OU FALSO -->
+      <div *ngIf="tipoSelecionado === 'VERDADEIRO_FALSO'" class="form-especifico">
+      
+      <div class="form-row">
+        <label>Tópico (Matéria):</label>
+        <input type="text" [(ngModel)]="novaQuestao.topico" placeholder="Ex: Camada de Transporte">
+      </div>
+
+      <div class="form-row full-width">
+        <label>Enunciado:</label>
+        <textarea [(ngModel)]="novaQuestao.enunciado" rows="3" placeholder="Digite a pergunta aqui..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Gabarito (Correta):</label>
+        <select [(ngModel)]="novaQuestao.respostaCorreta" class="select-gabarito">
+          <option value="" disabled>Selecione...</option>
+          <option value="V">VERDADEIRO</option>
+          <option value="F">FALSO</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button class="btn-salvar" (click)="onSalvar()" [disabled]="isSaving">
+          <span *ngIf="!isSaving">Cadastrar Questão</span>
+          <span *ngIf="isSaving" class="loader"></span>
+        </button>
+      </div>
+      </div>
+     <!--FORMULÁRIO - QUESTÃO DISCURSIVA -->
+      <div *ngIf="tipoSelecionado === 'DISCURSIVA'" class="form-especifico">
+      
+      <div class="form-row">
+        <label>Tópico (Matéria):</label>
+        <input type="text" [(ngModel)]="novaQuestao.topico" placeholder="Ex: Camada de Transporte">
+      </div>
+
+      <div class="form-row full-width">
+        <label>Enunciado:</label>
+        <textarea [(ngModel)]="novaQuestao.enunciado" rows="3" placeholder="Digite a pergunta aqui..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <label>Gabarito (Correta):</label>
+        <textarea 
+          [(ngModel)]="novaQuestao.respostaCorreta" 
+          class="textarea-gabarito" 
+          rows="5" 
+          placeholder="Digite a resposta esperada ou a explicação detalhada para esta questão discursiva..."
+        ></textarea>
+      </div>
+      
+      <div class="actions">
+        <button class="btn-salvar" (click)="onSalvar()" [disabled]="isSaving">
+          <span *ngIf="!isSaving">Cadastrar Questão</span>
+          <span *ngIf="isSaving" class="loader"></span>
+        </button>
+      </div>
+      </div>
+    </div>
+    <!-- <div *ngIf="tipoSelecionado && tipoSelecionado !== 'MULTIPLA_ESCOLHA_4' 
+    && tipoSelecionado && tipoSelecionado !== 'MULTIPLA_ESCOLHA_5'
+    && tipoSelecionado && tipoSelecionado !== 'VERDADEIRO_FALSO'" class="aviso-construcao">
+      <p>O formulário para <strong>{{ tipoSelecionado }}</strong> ainda está em construção.</p>
+    </div>   -->
+  </div>

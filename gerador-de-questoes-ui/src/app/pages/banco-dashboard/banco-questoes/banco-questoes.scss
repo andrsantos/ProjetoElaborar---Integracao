@@ -1,0 +1,90 @@
+:host {
+  display: block;
+}
+.container { max-width: 800px; margin: 0 auto; }
+h1 { color: var(--cor-secundaria); margin-top: 0; }
+.subtitle { color: #6c757d; margin-bottom: 2rem; }
+
+.form-secao {
+  background-color: var(--cor-cartao);
+  padding: 2rem;
+  border-radius: var(--raio-borda);
+  border: 1px solid var(--cor-borda);
+  box-shadow: var(--sombra-cartao);
+}
+
+.form-row {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+.form-row label { font-weight: 500; margin-bottom: 0.5rem; }
+.form-row input, .form-row select, .form-row textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-borda);
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.full-width textarea { width: 100%; resize: vertical; box-sizing: border-box; }
+
+/* Grid das Alternativas */
+.alternativas-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Duas colunas */
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.input-alt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.input-alt span { font-weight: bold; color: var(--cor-primaria); }
+.input-alt input { flex-grow: 1; padding: 0.6rem; border: 1px solid var(--cor-borda); border-radius: var(--raio-borda); }
+
+.select-gabarito { width: 200px; }
+
+.actions { margin-top: 2rem; text-align: right; }
+
+.btn-salvar {
+  background-color: var(--cor-sucesso);
+  color: white;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  border: none; border-radius: var(--raio-borda);
+  cursor: pointer;
+}
+.btn-salvar:hover { opacity: 0.9; }
+
+.aviso-construcao {
+  text-align: center;
+  padding: 3rem;
+  color: #6c757d;
+  background-color: var(--cor-fundo);
+  border-radius: var(--raio-borda);
+}
+
+/* Loader */
+.loader {
+  display: inline-block; width: 1em; height: 1em;
+  border: 2px solid rgba(255,255,255,0.5);
+  border-bottom-color: #fff;
+  border-radius: 50%;
+  animation: rot 1s linear infinite;
+}
+
+
+.textarea-gabarito {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-borda);
+  font-size: 1rem;
+  font-family: inherit; 
+  resize: vertical; 
+  box-sizing: border-box;
+}
+@keyframes rot { to { transform: rotate(360deg); } }

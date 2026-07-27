@@ -1,0 +1,22 @@
+/* Este CSS/SCSS define o layout principal 
+  que "empurra" o conteúdo para o lado da sidebar.
+*/
+:host {
+  display: block;
+}
+
+.app-layout-container {
+  display: flex;
+}
+
+.content-area {
+  /* O conteúdo principal ocupa todo o espaço 
+     RESTANTE depois da sidebar (que tem 250px)
+  */
+  margin-left: 250px; /* Mesma largura da sidebar */
+  flex-grow: 1;
+  padding: 1.5rem;
+  height: 100vh;
+  overflow-y: auto; /* Adiciona scroll só a esta área */
+  box-sizing: border-box; /* Garante que o padding não quebre o layout */
+}

@@ -1,0 +1,33 @@
+<nav class="sidebar-container">
+  <div class="sidebar-header">
+    <h3>Elaborar</h3>
+    <span *ngIf="temDisciplinaAtiva">{{ nomeDisciplinaAtiva || 'Carregando...' }}</span>
+  </div>
+
+  <ul class="sidebar-nav-list">
+    <li *ngFor="let link of linksExibidos">
+      <a 
+        [routerLink]="link.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: link.exact }"
+        (click)="lidarComClique(link, $event)"
+        [class.exit-link]="link.isExit">
+        {{ link.label }}
+      </a>
+    </li>
+  </ul>
+
+
+  <div class="sidebar-footer">
+    <a href="#" class="btn-logout" (click)="sairDoSistema($event)" title="Sair do Elaborar">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span>Sair</span>
+    </a>
+  </div>
+
+
+</nav>

@@ -1,0 +1,81 @@
+<div class="geracao-container">
+  
+  <header class="geracao-header">
+    <h1>Geração Expressa de Prova</h1>
+    <p class="subtitle">Selecione os parâmetros rapidamente e deixe a IA selecionar as melhores questões do seu banco.</p>
+  </header>
+
+  <div class="geracao-card">
+    
+    <div class="form-section">
+      <h3>1. Tamanho da Prova <span class="obrigatorio">*</span></h3>
+      <div class="pills-group">
+        <button type="button" class="pill" 
+                *ngFor="let qtd of opcoesQuantidade" 
+                [class.active]="quantidadeSelecionada === qtd"
+                (click)="selecionarQuantidade(qtd)">
+          {{ qtd }} Questões
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>2. Nível de Dificuldade <span class="obrigatorio">*</span></h3>
+      <div class="pills-group">
+        <button type="button" class="pill" 
+                *ngFor="let nivel of opcoesNivel" 
+                [class.active]="nivelSelecionado === nivel.valor"
+                (click)="selecionarNivel(nivel.valor)">
+          {{ nivel.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title-flex">
+        <h3>3. Foco nos Tópicos (Múltipla escolha) <span class="obrigatorio">*</span></h3>
+        <span class="badge-info" *ngIf="topicosSelecionados.length > 0">
+          {{ topicosSelecionados.length }} selecionado(s)
+        </span>
+      </div>
+      
+      <div class="pills-group" *ngIf="topicosDisponiveis.length > 0">
+        <button type="button" class="pill pill-topico" 
+                *ngFor="let topico of topicosDisponiveis" 
+                [class.active]="topicosSelecionados.includes(topico)"
+                (click)="toggleTopico(topico)">
+          {{ topico }}
+        </button>
+      </div>
+      
+      <div class="empty-state-micro" *ngIf="topicosDisponiveis.length === 0">
+        <span class="spinner-micro" *ngIf="carregandoTopicos"></span>
+        <span *ngIf="carregandoTopicos">Buscando árvore de conceitos...</span>
+        <span *ngIf="!carregandoTopicos">Nenhum tópico encontrado nesta disciplina.</span>
+      </div>
+    </div>
+
+    <div class="form-section prompt-section">
+      <h3>4. Diretriz Adicional da IA (Opcional)</h3>
+      <p class="section-desc">Deseja algum foco específico? Ex: "Priorize questões com casos práticos e evite questões puramente teóricas."</p>
+      <textarea 
+        [(ngModel)]="diretrizPrompt" 
+        rows="3" 
+        placeholder="Digite suas instruções adicionais aqui..."
+        [disabled]="isGerando">
+      </textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-gerar" (click)="iniciarGeracao()" [disabled]="isGerando || !isFormularioValido()">
+        <span *ngIf="!isGerando">Gerar Prova com Inteligência Artificial 🚀</span>
+        <div *ngIf="isGerando" class="loader-container">
+          <span class="loader-small-white"></span>
+          <span>Analisando e montando a prova...</span>
+        </div>
+      </button>
+    </div>
+
+  </div>
+</div>
+

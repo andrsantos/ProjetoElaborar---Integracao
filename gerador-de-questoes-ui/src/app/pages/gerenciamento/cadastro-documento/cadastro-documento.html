@@ -1,0 +1,79 @@
+<div class="cadastro-page-container">
+  
+  <header class="page-header">
+    <div class="title-area">
+      <button class="btn-back" (click)="voltar()" [disabled]="isProcessingRag">
+        <i class="fas fa-arrow-left"></i> Voltar
+      </button>
+      <div>
+        <h1>Cadastrar Documentos (PDF)</h1>
+        <p>Alimente a Inteligência Artificial da disciplina com novos materiais de base.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="content-area">
+    
+    <div class="card-section">
+      <div class="section-header-flex">
+        <h3>Seleção e Identificação dos Materiais</h3>
+        
+        <input type="file" id="fileInput" multiple (change)="onFileSelected($event)" accept=".pdf" hidden>
+        <label for="fileInput" class="btn-add-files">
+          <i class="fas fa-search"></i> Procurar PDFs
+        </label>
+      </div>
+
+      <div *ngIf="arquivosContexto.length === 0" class="empty-files-area">
+        <i class="fas fa-file-pdf"></i>
+        <p>Nenhum documento selecionado.</p>
+        <span>Clique no botão acima para escolher os PDFs do seu computador.</span>
+      </div>
+
+      <div *ngIf="arquivosContexto.length > 0" class="files-grid">
+        <div class="file-card" *ngFor="let item of arquivosContexto; let i = index">
+          
+          <div class="file-header">
+            <div class="file-name">
+              <i class="fas fa-file-pdf text-danger"></i> 
+              <span title="{{ item.arquivo.name }}">{{ item.arquivo.name }}</span>
+            </div>
+            <button class="btn-remove" (click)="removerArquivoDaLista(i)" title="Remover"><i class="fas fa-times"></i></button>
+          </div>
+
+          <div class="file-body">
+            <label style="font-weight: 600; color: #495057;">Título do Documento (*):</label>
+            <input type="text" [(ngModel)]="item.titulo" 
+                   class="form-control" 
+                   placeholder="Ex: Livro Kurose - Capítulo 1 ou Prova 2025.1">
+            <small style="color: #6c757d; font-size: 0.8rem; margin-top: 4px; display: block;">
+              Este é o nome que aparecerá no painel para gerar questões.
+            </small>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div class="form-actions-container">
+    <div class="action-info">
+      <span *ngIf="arquivosContexto.length > 0">
+        <strong>{{ arquivosContexto.length }}</strong> documento(s) pronto(s) para indexação.
+      </span>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn-cancel" (click)="voltar()" [disabled]="isProcessingRag">Cancelar</button>
+      
+      <button class="btn-submit" (click)="iniciarUpload()" [disabled]="isProcessingRag || !isContextoValido()">
+        <span *ngIf="!isProcessingRag"><i class="fas fa-cloud-upload-alt"></i> Salvar e Iniciar Indexação</span>
+        <div *ngIf="isProcessingRag" class="processing-state">
+          <span class="loader-small"></span> Processando (Aguarde)...
+        </div>
+      </button>
+    </div>
+  </div>
+
+</div>

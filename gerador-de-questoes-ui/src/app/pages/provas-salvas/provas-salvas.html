@@ -1,0 +1,45 @@
+<div class="container">
+
+      <header class="dashboard-header" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <h1 style="margin: 0;">Provas Salvas</h1>
+    
+    <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </header>
+
+
+  <p class="subtitle">Aqui estão todas as provas que você já finalizou e salvou no banco de dados.</p>
+
+  <div *ngIf="provas$ | async as provas; else loading">
+    
+    <div *ngIf="provas.length === 0" class="empty-state">
+      <h3>Nenhuma prova salva encontrada.</h3>
+      <p>Quando você finalizar uma prova no "Gerador de Provas", ela aparecerá aqui.</p>
+    </div>
+
+    <div *ngIf="provas.length > 0" class="card-grid">
+      
+      <a class="card" *ngFor="let prova of provas" [routerLink]="['/provas-salvas', prova.id]">
+        <h3>{{ prova.titulo || 'Prova de Redes' }}</h3>
+        
+        <p><strong>Questões:</strong> {{ prova.numeroQuestoes }}</p>
+        
+        <p><strong>Data de criação:</strong> {{ prova.dataCriacao | date:'dd/MM/yyyy' }}</p>
+        <p><strong>Hora:</strong> {{ prova.dataCriacao | date:'HH:mm' }}</p>
+        
+        <span class="link-detalhe">Clique para ver prova</span>
+      </a>
+    </div>
+
+  </div>
+
+  <ng-template #loading>
+    <p>Carregando provas salvas...</p>
+    </ng-template>
+</div>

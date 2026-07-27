@@ -1,0 +1,53 @@
+<div class="container">
+  <header>
+    <div class="header-content">
+      <h1>Escolher Questão do Banco</h1>
+      <p class="subtitle">Selecione uma questão existente para adicionar a este slot da prova.</p>
+    </div>
+    <button class="btn-voltar" (click)="onCancelar()">Cancelar e Voltar</button>
+  </header>
+
+  <div *ngIf="isLoading">Carregando...</div>
+
+  <div class="grid-questoes" *ngIf="!isLoading">
+    <div class="card-questao" *ngFor="let q of questoes">
+      
+      <!-- Cabeçalho do Card -->
+      <div class="card-header">
+        <span class="badge-tipo">{{ q.tipo }}</span>
+        <span class="badge-topico">{{ q.topico }}</span>
+      </div>
+      
+      <!-- Enunciado -->
+      <p class="enunciado-resumo">{{ q.enunciado }}</p>
+      
+      <!-- 
+        Exibe se houver alternativas (não null/undefined)
+      -->
+      <div class="area-alternativas-preview" *ngIf="q.alternativas && 
+      (q.tipo === 'MULTIPLA_ESCOLHA_4' || q.tipo === 'MULTIPLA_ESCOLHA_5')">
+        <ul>
+          <li *ngFor="let key of objectKeys(q.alternativas)">
+            <strong>{{ key | uppercase }})</strong> {{ q.alternativas[key] }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- GABARITO -->
+      <p class="gabarito-preview">
+        <strong>Resposta:</strong> {{ q.respostaCorreta }}
+      </p>
+
+      <!-- Ações -->
+      <div class="card-actions">
+        <button class="btn-selecionar" (click)="onSelecionar(q)">
+          Incluir na Prova
+        </button>
+      </div>
+    </div>
+    
+    <div *ngIf="questoes.length === 0" class="empty-state">
+      Nenhuma questão encontrada no banco.
+    </div>
+  </div>
+</div>

@@ -1,0 +1,13 @@
+@if (exibirLayoutPadrao()) {
+  <app-loading-bar></app-loading-bar>
+
+  <div class="app-layout-container">
+    <app-sidebar></app-sidebar>
+
+    <main class="content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+} @else {
+  <router-outlet></router-outlet>
+}

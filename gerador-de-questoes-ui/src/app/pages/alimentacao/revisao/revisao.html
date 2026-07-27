@@ -1,0 +1,132 @@
+<div class="container-revisao">
+  
+  <div class="estado-loading" *ngIf="statusJob === 'PENDING' || statusJob === 'PROCESSING'">
+    <div class="loader-animacao">
+      <div class="spinner"></div> 
+    </div>
+    <h2>A Inteligência Artificial está trabalhando...</h2>
+    <p>Estamos lendo o seu PDF, extraindo as questões e gerando novas sugestões pedagógicas.</p>
+    <p class="dica">Isso pode levar alguns minutos. Você pode sair desta página e voltar mais tarde se desejar.</p>
+  </div>
+
+  <div class="estado-erro" *ngIf="statusJob === 'ERROR'">
+    <h2>Ops! Algo deu errado.</h2>
+    <p class="mensagem-erro">{{ mensagemErro }}</p>
+    <button class="btn-voltar" routerLink="/alimentacao">Voltar e tentar novamente</button>
+  </div>
+
+  <div class="estado-revisao" *ngIf="statusJob === 'COMPLETED'">
+    <div class="header-revisao sticky-header">
+      <div class="header-info">
+        <h2>Revisão de Questões Extraídas</h2>
+        <span class="badge-info">Processamento Concluído</span>
+      </div>
+      
+      <!-- AÇÕES DINÂMICAS BASEADAS NO MODO DE EXTRAÇÃO -->
+      <div class="header-actions" [ngSwitch]="modoExtracao">
+        <!-- Modo: Misto -->
+        <ng-container *ngSwitchCase="'ORIGINAIS_E_SUGESTOES'">
+          <button class="btn-text" (click)="marcarTodasSugeridas()">Aprovar Apenas Sugestões</button>
+          <button class="btn-text" (click)="marcarTodasOriginais()">Aprovar Apenas Originais</button>
+        </ng-container>
+
+        <!-- Modos: Apenas Originais OU Apenas Variações -->
+        <ng-container *ngSwitchDefault>
+          <button class="btn-text" (click)="aprovarTodas()">Aprovar Todas</button>
+        </ng-container>
+
+        <button class="btn-text btn-danger-text" (click)="desmarcarTodas()">Desmarcar Tudo</button>
+      </div>
+    </div>
+
+    <div class="body-revisao">
+      <div class="card-revisao" *ngFor="let q of questoesExtraidas; let i = index">
+        
+        <div class="conteudo-questoes">
+          
+          <!-- ESTILO DINÂMICO PARA OS CARDS -->
+          <div class="bloco-questao" 
+               [ngClass]="{
+                 'inspirada': isSugestao(q) || modoExtracao === 'APENAS_VARIACOES', 
+                 'original': !isSugestao(q) && modoExtracao !== 'APENAS_VARIACOES',
+                 'bloco-descartado': !questoesAprovadas.has(i)
+               }">
+               
+            <div class="bloco-header">
+              <!-- SELOS DINÂMICOS BASEADOS NO MODO DE EXTRAÇÃO -->
+              <span class="label-tipo" *ngIf="modoExtracao === 'ORIGINAIS_E_SUGESTOES'" [class.highlight]="isSugestao(q)">
+                {{ isSugestao(q) ? 'Sugestão Inédita (Gerada pela IA)' : 'Questão Original Extraída' }}
+              </span>
+
+              <span class="label-tipo" *ngIf="modoExtracao === 'APENAS_ORIGINAIS'">
+                Questão Original Extraída
+              </span>
+
+              <span class="label-tipo highlight" *ngIf="modoExtracao === 'APENAS_VARIACOES'">
+                Variação Inédita (Gerada pela IA)
+              </span>
+
+              <label class="check-aprovar" [class.highlight-check]="isSugestao(q) || modoExtracao === 'APENAS_VARIACOES'">
+                <input type="checkbox" [checked]="questoesAprovadas.has(i)" (change)="toggleAprovacao(i)">
+                <span>Salvar Questão</span>
+              </label>
+            </div>
+            
+            <div class="campo-editavel mt-2">
+              <h4 *ngIf="!isEditando(i, 'enunciado')">{{ q.enunciado }}</h4>
+              <button class="btn-icon-edit" (click)="ativarEdicao(i, 'enunciado')" *ngIf="!isEditando(i, 'enunciado')">✎</button>
+              <div *ngIf="isEditando(i, 'enunciado')" class="edit-box">
+                <textarea [(ngModel)]="q.enunciado" rows="3"></textarea>
+                <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+              </div>
+            </div>
+
+            <ul class="alternativas-revisao">
+              <li *ngFor="let alt of ['A','B','C','D','E']">
+                <div class="campo-editavel flex-inline">
+                  <strong>{{ alt }}):</strong> 
+                  <span class="texto-alt" *ngIf="!isEditando(i, alt.toLowerCase())">{{ q.alternativas[alt] }}</span>
+                  <button class="btn-icon-edit small" (click)="ativarEdicao(i, alt.toLowerCase())" *ngIf="!isEditando(i, alt.toLowerCase())">✎</button>
+                  
+                  <div *ngIf="isEditando(i, alt.toLowerCase())" class="edit-box inline">
+                    <textarea [(ngModel)]="q.alternativas[alt]" rows="2"></textarea>
+                    <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            
+            <div class="campo-editavel flex-inline">
+              <strong>Gabarito:</strong> 
+              <span *ngIf="!isEditando(i, 'resposta')">{{ q.respostaCorreta || q.gabarito }}</span>
+              <button class="btn-icon-edit small" (click)="ativarEdicao(i, 'resposta')" *ngIf="!isEditando(i, 'resposta')">✎</button>
+              
+              <div *ngIf="isEditando(i, 'resposta')" class="edit-box inline short-input">
+                <input type="text" [(ngModel)]="q.respostaCorreta" maxlength="1" class="input-gabarito">
+                <button class="btn-save-inline" (click)="salvarEdicao()">OK</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-revisao sticky-footer">
+      <div class="opcoes-salvamento">
+        <label class="check-prova-rapida">
+          <input type="checkbox" [(ngModel)]="criarProvaRapida">
+          <span><i class="fas fa-bolt"></i> Criar Prova Rápida com estas questões</span>
+        </label>
+      </div>
+
+      <div class="acoes-botoes">
+        <button class="btn-cancelar" routerLink="/alimentacao">Descartar Lote</button>
+        <button class="btn-finalizar-batch" (click)="confirmarESalvarNoBanco()" [disabled]="isSalvando || questoesAprovadas.size === 0">
+          <span *ngIf="!isSalvando">Salvar Selecionadas ({{ questoesAprovadas.size }})</span>
+          <span *ngIf="isSalvando">Processando...</span>
+        </button>
+      </div>
+    </div>
+    
+  </div>
+</div>

@@ -1,0 +1,214 @@
+<div class="admin-container">
+  <div class="dashboard-header" style="margin-bottom: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0;">Painel de Gerenciamento</h2>
+    
+    <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+      <span class="tag-label">Disciplina:</span>
+      <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+    </div>
+
+    <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+      <span class="spinner-micro"></span> Carregando ambiente...
+    </div>
+  </div>
+  <p>Pesquise os registros de documentação para ver os materiais cadastrados na sua base, <br>ou acompanhe o status de extração das provas geradas pela IA.</p>
+
+  <form [formGroup]="managementForm" (ngSubmit)="onSearch()">
+    <div class="selection-group">
+      <label>
+        <input type="radio" formControlName="tableType" value="documentation">
+        Base de Conhecimento (Documentos)
+      </label>
+      
+      <!-- <label>
+        <input type="radio" formControlName="tableType" value="processamentos">
+        Histórico de Processamentos
+      </label> -->
+    </div>
+    
+    <button type="submit" [disabled]="!managementForm.valid || isSearching" class="btn-search">
+      <span *ngIf="!isSearching">Pesquisar Registros</span>
+      
+      <div *ngIf="isSearching" style="display: flex; gap: 8px; align-items: center; justify-content: center;">
+        <span class="loader-small"></span> Pesquisando...
+      </div>
+    </button>
+  </form>
+
+  <div class="results-area" *ngIf="searchPerformed || isSearching">
+
+    <div class="skeleton-container" *ngIf="isSearching">
+      <div class="skeleton-toolbar">
+        <div class="sk-block sk-text-short"></div>
+        <div class="sk-block sk-btn-skeleton"></div>
+      </div>
+      <div class="skeleton-table">
+        <div class="sk-tr sk-th">
+          <div class="sk-td" style="flex: 2;"></div>
+          <div class="sk-td" style="flex: 1;"></div>
+          <div class="sk-td" style="flex: 1;"></div>
+          <div class="sk-td" style="flex: 1;"></div>
+        </div>
+        <div class="sk-tr" *ngFor="let i of [1,2,3,4,5]">
+          <div class="sk-td" style="flex: 2;"><div class="sk-block sk-text"></div></div>
+          <div class="sk-td" style="flex: 1; justify-content: center;"><div class="sk-block sk-btn-skeleton"></div></div>
+          <div class="sk-td" style="flex: 1; justify-content: center;"><div class="sk-block sk-btn-skeleton"></div></div>
+          <div class="sk-td" style="flex: 1; justify-content: center;"><div class="sk-block sk-btn-skeleton"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="managementForm.get('tableType')?.value === 'documentation'">
+      
+      <ng-container *ngIf="!isSearching && searchPerformed">
+        <div class="filters-container">
+          <div class="filter-group">
+            <label>Filtrar Título ou Arquivo:</label>
+            <input type="text" [(ngModel)]="filtroTermo" (input)="onFiltroChange()" placeholder="Ex: Kurose, Prova...">
+          </div>
+          <button type="button" class="btn-clear" (click)="limparFiltros()">Limpar</button>
+        </div>
+
+        <div class="table-header-actions">
+          <span>Documentos na Base: <strong>{{ listaMateriaisFiltrada.length }}</strong></span>
+          <button type="button" class="btn-insert" (click)="irParaCadastroDocumento()">
+            <i class="fas fa-plus-circle"></i> Novo Upload de PDF
+          </button>
+        </div>
+
+        <div class="empty-state-rag" *ngIf="listaMateriaisFiltrada.length === 0">
+          <div class="empty-icon-wrapper">
+            <i class="fas fa-brain"></i>
+          </div>
+          <h3>A memória da IA está vazia!</h3>
+          <p>Faça o upload do seu primeiro PDF (Livro, Lista ou Prova) para alimentar a inteligência da disciplina.</p>
+          <button class="btn-insert-large" (click)="irParaCadastroDocumento()">
+            <i class="fas fa-cloud-upload-alt"></i> Alimentar Base de Conhecimento
+          </button>
+        </div>
+
+        <ng-container *ngIf="listaMateriaisFiltrada.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width: 30%;">Título do Documento</th>
+                <th style="width: 30%;">Arquivo Original</th>
+                <th style="text-align: center; width: 20%;">Instruções (IA)</th>
+                <th style="text-align: center; width: 20%;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let doc of listaMateriaisPaginada">
+                
+                <td class="font-weight-bold" style="font-size: 1.05rem; color: var(--cor-primaria);">
+                  <i class="fas fa-book" style="margin-right: 8px;"></i>
+                  {{ doc.titulo }}
+                </td>
+                
+                <td style="color: #495057;">
+                  <i class="fas fa-file-pdf" style="color: #e74c3c; margin-right: 5px;"></i>
+                  {{ doc.nomeArquivo || 'Arquivo PDF' }}
+                </td>
+
+                <td style="text-align: center;">
+                  <button class="btn-gerenciar-prompts" 
+                          (click)="irParaGerenciamentoPrompts(doc)" 
+                          style="background-color: #f8fafc; border: 1px solid var(--cor-primaria); padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--cor-primaria); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-robot"></i> Prompts
+                  </button>
+                </td>
+
+                <td style="text-align: center; display: flex; justify-content: center; gap: 8px;">
+                  <button class="btn-edit-small" (click)="baixarPDF(doc.idBinario, doc.nomeArquivo)" title="Baixar Arquivo" style="padding: 8px 12px; border: 1px solid #ced4da; background: white; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-download" style="color: #495057;"></i>
+                  </button> 
+                  <button class="btn-delete-small" title="Excluir Documento" (click)="excluirDocumento(doc)" style="padding: 8px 12px; border: 1px solid #dc3545; background: #fff0f0; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-trash-alt" style="color: #dc3545;"></i>
+                  </button>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+      </ng-container>
+    </div>
+
+    <div *ngIf="managementForm.get('tableType')?.value === 'processamentos'">
+      <ng-container *ngIf="!isSearching && searchPerformed">
+        <div class="table-header-actions">
+          <span>Processamentos Solicitados: <strong>{{ listaJobsFiltrada?.length || 0 }}</strong></span>
+          <button type="button" class="btn-insert" routerLink="/alimentacao">
+            <i class="fas fa-robot"></i> Nova Extração de Prova
+          </button>
+        </div>
+
+        <div class="empty-state-rag" *ngIf="!listaJobsFiltrada || listaJobsFiltrada.length === 0">
+          <div class="empty-icon-wrapper">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <h3>Nenhum processamento encontrado</h3>
+          <p>Você ainda não enviou nenhum PDF de prova para a IA extrair.</p>
+          <button class="btn-insert-large" routerLink="/alimentacao">
+            <i class="fas fa-upload"></i> Processar Primeira Prova
+          </button>
+        </div>
+
+        <ng-container *ngIf="listaJobsFiltrada && listaJobsFiltrada.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width: 15%;">Data / Hora</th>
+                <th style="width: 35%;">Referência / Arquivo</th>
+                <th style="text-align: center; width: 15%;">Tipo</th>
+                <th style="text-align: center; width: 15%;">Status</th>
+                <th style="text-align: center; width: 20%;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let job of listaJobsPaginada">
+                <td style="color: #6c757d; font-weight: 500;">
+                  <i class="far fa-calendar-alt" style="margin-right: 5px;"></i>
+                  {{ job.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+                <td class="font-weight-bold" style="color: var(--cor-texto);">
+                  <i class="fas" [ngClass]="job.tipo === 'EXTRACAO_PROVA' ? 'fa-file-pdf' : 'fa-brain'" [style.color]="job.tipo === 'EXTRACAO_PROVA' ? '#e74c3c' : 'var(--cor-primaria)'" style="margin-right: 8px;"></i>
+                  {{ job.nomeArquivo || 'Arquivo Desconhecido' }}
+                </td>
+                <td style="text-align: center;">
+                  <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #4f46e5; background: #eef2ff; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px;">
+                    {{ job.tipo === 'EXTRACAO_PROVA' ? 'Extração PDF' : (job.tipo || 'Extração PDF') }}
+                  </span>
+                </td>
+                <td style="text-align: center;">
+                    <span *ngIf="job.status === 'COMPLETED'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #155724; background-color: #d4edda; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
+                      <i class="fas fa-check-circle" style="margin-right: 4px;"></i> Concluído
+                    </span>
+                    <span *ngIf="job.status === 'PENDING' || job.status === 'PROCESSING'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #004085; background-color: #cce5ff; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
+                      <i class="fas fa-spinner fa-spin" style="margin-right: 4px;"></i> 
+                      {{ job.status === 'PENDING' ? 'Na Fila' : 'Processando' }}
+                    </span>
+                    <span *ngIf="job.status === 'ERROR'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #721c24; background-color: #f8d7da; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
+                      <i class="fas fa-exclamation-circle" style="margin-right: 4px;"></i> Falha
+                    </span>
+                  </td>
+                <td style="text-align: center;">
+                  <button *ngIf="job.status === 'COMPLETED'" class="btn-insert" [routerLink]="['/revisao', job.id]" style="padding: 6px 16px; font-size: 0.85rem; background-color: var(--cor-sucesso); border: none; border-radius: 6px; color: white; cursor: pointer;">
+                    <i class="fas fa-eye"></i> Revisar
+                  </button>
+                  <button *ngIf="job.status === 'ERROR'" class="btn-excluir-topico" (click)="abrirModalErroJob(job)" style="padding: 6px 16px; font-size: 0.85rem; background-color: #fff0f0; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-info-circle"></i> Detalhes
+                  </button>
+                  <span *ngIf="job.status === 'PROCESSING' || job.status === 'PENDING'" style="color: var(--cor-secundaria); font-size: 0.85rem; font-style: italic;">
+                    Aguarde a IA...
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+      </ng-container>
+    </div>
+
+  </div>
+</div>

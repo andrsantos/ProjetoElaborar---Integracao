@@ -1,0 +1,506 @@
+// Variáveis de Tema (Ajuste as cores principais conforme o padrão do Elaborar)
+:host {
+  --primary: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --success: #198754;
+  --success-hover: #157347;
+  --bg-app: #f4f7f6;
+  --card-bg: #ffffff;
+  --text-main: #2b2d42;
+  --text-muted: #6c757d;
+  --border-color: #dee2e6;
+  --border-radius: 8px;
+}
+
+.container-revisao {
+  background-color: var(--bg-app);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* =========================================
+   HEADER STICKY
+   ========================================= */
+.header-revisao {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--card-bg);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
+
+  .header-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      color: var(--text-main);
+      font-weight: 700;
+    }
+
+    .badge-info {
+      background: #e0f2fe;
+      color: #0284c7;
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+
+    .btn-text {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: #f8f9fa;
+        border-color: #adb5bd;
+      }
+    }
+
+    .btn-danger-text {
+      color: #dc3545 !important;
+      border-color: #f5c2c7 !important;
+      
+      &:hover {
+        background: #f8d7da !important;
+        border-color: #f1aeb5 !important;
+      }
+    }
+  }
+}
+
+/* =========================================
+   CORPO DA REVISÃO
+   ========================================= */
+.body-revisao {
+  padding: 2rem;
+  flex: 1;
+  max-width: 1000px; 
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* =========================================
+   CARDS DE QUESTÃO
+   ========================================= */
+.card-revisao {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-color);
+  
+  .conteudo-questoes {
+    display: block; 
+    width: 100%;
+  }
+}
+
+/* =========================================
+   BLOCOS INTERNOS
+   ========================================= */
+.bloco-questao {
+  padding: 1.5rem;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  word-break: break-word; 
+  transition: all 0.3s ease; 
+  transform-origin: top center;
+
+  &.original {
+    background: #f8f9fa; 
+    border: 1px solid #e9ecef;
+    border-left: 4px solid #adb5bd; 
+  }
+  
+  &.inspirada {
+    background: #f0f7ff; 
+    border: 1px solid #b6d4fe; 
+    border-left: 4px solid #0d6efd; 
+  }
+
+  &.bloco-descartado {
+    opacity: 0.45;
+    filter: grayscale(80%);
+    transform: scale(0.98); 
+    border-left-color: transparent;
+  }
+
+  .bloco-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+
+    .label-tipo {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin: 0; 
+
+      &.highlight {
+        color: #0284c7;
+      }
+    }
+
+    .check-aprovar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--primary);
+      cursor: pointer;
+      user-select: none;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: rgba(13, 110, 253, 0.05);
+      }
+
+      input[type="checkbox"] {
+        width: 1.2rem;
+        height: 1.2rem;
+        cursor: pointer;
+        accent-color: var(--primary);
+      }
+
+      &.highlight-check {
+        color: var(--success);
+        
+        &:hover {
+          background: rgba(25, 135, 84, 0.05);
+        }
+
+        input[type="checkbox"] {
+          accent-color: var(--success);
+        }
+      }
+    }
+  }
+
+  .campo-editavel {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    h4 {
+      margin: 0 0 1rem 0;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    .btn-icon-edit {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      padding: 0.2rem 0.5rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s;
+
+      &:hover {
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+    }
+  }
+
+  .alternativas-revisao {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+
+    li {
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      line-height: 1.4;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      strong {
+        color: var(--primary);
+        margin-right: 0.5rem;
+      }
+    }
+  }
+}
+
+/* =========================================
+   CAIXA DE EDIÇÃO RÁPIDA
+   ========================================= */
+.edit-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    resize: vertical;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+    outline: none;
+  }
+
+  .btn-save-inline {
+    align-self: flex-end;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:hover {
+      background: var(--primary-hover);
+    }
+  }
+}
+
+/* =========================================
+   FOOTER STICKY
+   ========================================= */
+.footer-revisao {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background: var(--card-bg);
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--border-color);
+
+  .opcoes-salvamento {
+    .check-prova-rapida {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #f1f5f9;
+      }
+
+      input[type="checkbox"] {
+        width: 1.2rem;
+        height: 1.2rem;
+        cursor: pointer;
+        accent-color: var(--success);
+      }
+
+      i {
+        color: #eab308;
+      }
+    }
+  }
+
+  .acoes-botoes {
+    display: flex;
+    gap: 1rem;
+
+    button {
+      padding: 0.85rem 1.5rem;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+
+      &.btn-cancelar {
+        background: white;
+        border: 1px solid var(--text-muted);
+        color: var(--text-muted);
+
+        &:hover {
+          background: #f8f9fa;
+          color: var(--text-main);
+          border-color: var(--text-main);
+        }
+      }
+
+      &.btn-finalizar-batch {
+        background: var(--success);
+        border: none;
+        color: white;
+
+        &:hover:not(:disabled) {
+          background: var(--success-hover);
+          transform: translateY(-1px);
+        }
+
+        &:disabled {
+          background: #9ca3af;
+          cursor: not-allowed;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+}
+
+/* =========================================
+   TELAS DE CARREGAMENTO E ERRO
+   ========================================= */
+.estado-loading, .estado-erro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  h2 {
+    color: var(--text-main);
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+  }
+
+  p {
+    color: var(--text-muted);
+    max-width: 500px;
+    line-height: 1.6;
+    font-size: 1.1rem;
+  }
+
+  .dica {
+    font-size: 0.95rem;
+    margin-top: 2rem;
+    background: #fff3cd;
+    color: #856404;
+    padding: 1rem 1.5rem;
+    border-radius: 6px;
+    border: 1px solid #ffeeba;
+  }
+}
+
+.loader-animacao {
+  margin-bottom: 2.5rem;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(13, 110, 253, 0.1);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =========================================
+   AJUSTES PARA EDIÇÃO INLINE
+   ========================================= */
+.campo-editavel {
+  &.flex-inline {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    width: 100%;
+    
+    .texto-alt {
+      flex: 1;
+    }
+
+    .btn-icon-edit.small {
+      font-size: 0.9rem;
+      padding: 0.1rem 0.4rem;
+      margin-left: auto;
+    }
+  }
+}
+
+.edit-box.inline {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+
+  textarea {
+    flex: 1;
+    padding: 0.5rem;
+    min-height: 50px;
+  }
+
+  &.short-input {
+    width: auto;
+    align-items: center;
+  }
+
+  .input-gabarito {
+    width: 60px;
+    padding: 0.5rem;
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+    border: 2px solid var(--primary);
+    border-radius: 6px;
+    outline: none;
+  }
+
+  .btn-save-inline {
+    padding: 0.5rem 1rem;
+    height: fit-content;
+  }
+}
