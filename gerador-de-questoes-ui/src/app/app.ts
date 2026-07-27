@@ -4,11 +4,12 @@ import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { Sidebar } from './components/sidebar/sidebar';
 import { LoadingBarComponent } from './components/loading-bar/loading-bar';
+import { Breadcrumb } from './components/breadcrumb/breadcrumb';
 
 @Component({
   selector: 'app-root',
   standalone: true, 
-  imports: [CommonModule, RouterOutlet, Sidebar, LoadingBarComponent],
+  imports: [CommonModule, RouterOutlet, Sidebar, LoadingBarComponent, Breadcrumb],
   templateUrl: './app.html',
   styleUrl: './app.scss' 
 })

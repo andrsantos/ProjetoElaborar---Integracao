@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, ActivatedRoute, Router } from '@angular/router'; 
+import { RouterLink, ActivatedRoute, Router, RouterOutlet } from '@angular/router'; 
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
 import { HomeDisciplinas } from '../../pages/home-disciplinas/home-disciplinas';
 import { Disciplina } from '../../models/disciplina.model';
@@ -11,7 +11,7 @@ import { ToastrService } from 'ngx-toastr';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink], 
+  imports: [CommonModule, RouterLink, RouterOutlet], 
   templateUrl: './dashboard.html', 
   styleUrls: ['./dashboard.scss']   
 })

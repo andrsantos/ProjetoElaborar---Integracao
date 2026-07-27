@@ -1,0 +1,44 @@
+.modern-breadcrumb {
+  font-size: 0.875rem;
+  color: #6c757d;
+
+  .breadcrumb-list {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+
+      a {
+        color: #4f46e5; // Tom de azul/roxo moderno (combina com o menu)
+        text-decoration: none;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: #3730a3;
+          text-decoration: underline;
+        }
+      }
+
+      &.active {
+        color: #374151;
+        font-weight: 500;
+      }
+    }
+
+    .breadcrumb-separator {
+      margin: 0 0.5rem;
+      color: #9ca3af;
+      font-weight: 300;
+    }
+
+    .current-page {
+      color: #374151;
+    }
+  }
+}

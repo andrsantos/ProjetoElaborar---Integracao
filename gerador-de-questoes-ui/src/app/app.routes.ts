@@ -23,8 +23,6 @@ import { Login } from './pages/login/login';
 import { AuthGuard } from './guards/auth/auth-guard';
 
 export const routes: Routes = [
-  
-
   {
     path: 'login',
     component: Login,
@@ -34,114 +32,133 @@ export const routes: Routes = [
     path: '', 
     component: HomeDisciplinas,
     title: 'Minhas Disciplinas - Elaborar',
-    canActivate: [AuthGuard] 
+    canActivate: [AuthGuard],
+    data: { breadcrumb: 'Início' }
   },
   {
     path: 'painel/:idDisciplina', 
     component: Dashboard,
     title: 'Painel da Disciplina',
-    canActivate: [AuthGuard] 
+    canActivate: [AuthGuard],
+    data: { breadcrumb: 'Painel da Disciplina' }
   },
   {
-    path:'gerar-prova', 
+    path: 'gerar-prova', 
     component: GeradorProva,
     title: 'Gerador de Prova',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Gerador de Prova' }
   },
   {
     path: 'gerar-prova/automatico', 
     component: GeradorAutomatico,
     title: 'Gerar Nova Prova',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Automático' }
   },
   {
     path: 'gerar-prova/rapida', 
     component: GeracaoRapida,
     title: 'Gerar Prova - Rápida',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Rápida' }
   },
   {
     path: 'gerar-prova/manual',
     component: GeradorManual,
-    title: 'Gerador de Prova ',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    title: 'Gerador de Prova',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Manual' }
   },
   {
     path: 'gerar-prova/prova-builder',
     component: ProvaBuilder,
     title: 'Gerador de Prova',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Builder' }
   },
   {
     path: 'gerar-prova/escolher-modelo-prova', 
     component: MenuGeracao,
     title: 'Escolher Modelo de Geração',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Escolher Modelo' }
   },
   {
     path: 'provas-salvas',
     component: ProvasSalvas,
     title: 'Provas Salvas',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Provas Salvas' }
   },
   {
     path: 'provas-salvas/:id', 
     component: DetalheProva,
     title: 'Detalhe da Prova',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Detalhe da Prova' }
   },
   {
-    path:'banco-questoes',
+    path: 'banco-questoes',
     component: BancoDashboard,
-    title:'Dashboard Banco de Questões',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    title: 'Dashboard Banco de Questões',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Banco de Questões' }
   },
   {
-    path:'banco-questoes/gerenciar',
+    path: 'banco-questoes/gerenciar',
     component: GerenciarBanco,
-    title:'Gerenciar Banco de Questões',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    title: 'Gerenciar Banco de Questões',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Gerenciar' }
   },
   {
-    path:'banco-questoes/novo',
+    path: 'banco-questoes/novo',
     component: BancoQuestoes,
-    title:'Banco de Questões',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    title: 'Banco de Questões',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Nova Questão' }
   },
   {
-    path:'banco-questoes/selecionar-questao',
+    path: 'banco-questoes/selecionar-questao',
     component: SelecionarQuestao,
     title: 'Selecionar Questão do Banco',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Selecionar Questão' }
   },
   {
-    path:'alimentacao',
+    path: 'alimentacao',
     component: Alimentacao,
-    title:'Alimentacao - RAG',
-    canActivate: [AuthGuard, DisciplinaGuard]
-  },
-  {
-    path:'gerenciamento',
-    component: Gerenciamento,
-    title:'Gerenciamento - RAG',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    title: 'Alimentacao - RAG',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Alimentação RAG' }
   },
   {
     path: 'cadastro-documento',
     component: CadastroDocumento,
     title: 'Cadastro de Documento',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Cadastrar Documento' }
   },
   {
     path: 'detalhe-prompt',
     component: DetalhePrompt,
     title: 'Detalhes de Prompt',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Detalhes de Prompt' }
   },
   {
     path: 'revisao/:id', 
     component: Revisao,
     title: 'Revisão de Questões',
-    canActivate: [AuthGuard, DisciplinaGuard]
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Revisão' }
   },
+  {
+    path: 'gerenciamento',
+    component: Gerenciamento,
+    title: 'Gerenciamento - RAG',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Gerenciamento RAG' }
+   }
 ];
