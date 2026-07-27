@@ -8,7 +8,7 @@ import { HttpClient } from '@angular/common/http';
 })
 export class DisciplinaService {
 
-  private apiUrl = 'http://localhost:8082/api/disciplinas'; 
+  private apiUrl = 'http://187.77.240.149:8082/api/disciplinas'; 
 
   constructor(private http: HttpClient) {}
 
