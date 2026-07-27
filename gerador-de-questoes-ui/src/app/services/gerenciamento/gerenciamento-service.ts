@@ -12,10 +12,10 @@ import { DocumentoExibicao } from '../../models/documento-exibicao.model';
 })
 export class GerenciamentoService {
 
-  private readonly API_URL = 'http://localhost:8080/api/gerenciamento';
-  private readonly API_URL_2 = 'http://localhost:8080/api/gerenciamento/listar/documentos';
-  private readonly API_URL_3 = 'http://localhost:8080/api/gerenciamento/listar/documentos/filtrados';
-  private readonly API_URL_4 = 'http://localhost:8080/api/documentacao/download';
+  private readonly API_URL = 'http://localhost:8082/api/gerenciamento';
+  private readonly API_URL_2 = 'http://localhost:8082/api/gerenciamento/listar/documentos';
+  private readonly API_URL_3 = 'http://localhost:8082/api/gerenciamento/listar/documentos/filtrados';
+  private readonly API_URL_4 = 'http://localhost:8082/api/documentacao/download';
 
   constructor(private http: HttpClient) {}
   
@@ -63,7 +63,7 @@ export class GerenciamentoService {
   }
 
   baixarMaterialBinario(idBinario: string): Observable<Blob> {
-    const urlDownload = `http://localhost:8080/api/documentacao/download/${idBinario}`; 
+    const urlDownload = `http://localhost:8082/api/documentacao/download/${idBinario}`; 
     return this.http.get(urlDownload, { 
       responseType: 'blob' 
     });

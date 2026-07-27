@@ -8,7 +8,7 @@ import { Prompt } from '../../models/prompt.model';
 })
 export class PromptService {
   
-  private apiUrl = 'http://localhost:8080/api/prompts';
+  private apiUrl = 'http://localhost:8082/api/prompts';
 
   constructor(private http: HttpClient) {}
 
