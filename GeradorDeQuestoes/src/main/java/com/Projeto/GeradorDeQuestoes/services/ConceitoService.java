@@ -1,6 +1,7 @@
 package com.Projeto.GeradorDeQuestoes.services;
 
 import com.Projeto.GeradorDeQuestoes.entities.ConceitoEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +25,7 @@ public interface ConceitoService {
 
     ConceitoEntity processarConceitoQuestao(String nomeConceito, String disciplina, ConceitoEntity.TipoOrigem novaOrigem, UUID origemId);
 
-    List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina);
+    List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina, UsuarioEntity usuario);
 
     ConceitoEntity salvarConceitoSemente(String nomeTopico, String disciplinaId);
     

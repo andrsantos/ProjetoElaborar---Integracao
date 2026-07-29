@@ -83,18 +83,31 @@ export class Revisao implements OnInit, OnDestroy {
     ).subscribe({
       next: (job) => {
         this.statusJob = job.status;
-        if (job.status === 'COMPLETED') {
+        
+        if (job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO') {
           this.destroy$.next(); 
+          
           this.questoesExtraidas = JSON.parse(job.resultadoJson);
           this.caminhoArquivoTemporario = job.caminhoArquivoTemporario;
           this.modoExtracao = job.modoExtracao || 'APENAS_ORIGINAIS';
           console.log("Questões extraídas", this.questoesExtraidas);
+          
           this.prepararRevisao();
-          this.toastr.success('Extração concluída com sucesso!');
+          
+          if (job.status === 'COMPLETED') {
+            this.toastr.success('Extração concluída com sucesso!');
+          } else {
+            this.toastr.warning(
+              job.mensagemErro || 'O saldo esgotou durante o processamento. As questões geradas até o momento foram salvas com sucesso.', 
+              'Processamento Parcial', 
+              { timeOut: 8000 }
+            );
+          }
+          
         } else if (job.status === 'ERROR') {
           this.destroy$.next(); 
           this.mensagemErro = job.mensagemErro || 'Ocorreu um erro no processamento da IA.';
-          this.toastr.error('Falha na extração.');
+          this.toastr.error(this.mensagemErro, 'Falha na extração');
         }
       },
       error: () => {

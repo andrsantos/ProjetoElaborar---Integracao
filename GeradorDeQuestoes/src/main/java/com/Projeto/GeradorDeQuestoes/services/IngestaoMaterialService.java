@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.pdfbox.Loader;
@@ -14,6 +15,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
@@ -25,12 +28,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
 import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
-
 
 @Service
 public class IngestaoMaterialService {
@@ -40,23 +43,24 @@ public class IngestaoMaterialService {
     private final ChatClient anthropicChatClient;
     private final ChatClient openAiChatClient;
     private final ExtracaoJobService jobService;
-
-
+    private final CobrancaLlmService cobrancaLlmService;
+    private final CarteiraService carteiraService;
 
     public IngestaoMaterialService(VectorStore vectorStore, 
        @Qualifier("anthropicChatClient") ChatClient anthropicChatClient,
-        @Qualifier("openAiChatClient") ChatClient openAiChatClient,
-
-       ExtracaoJobService jobService) {
+       @Qualifier("openAiChatClient") ChatClient openAiChatClient,
+       ExtracaoJobService jobService,
+       CobrancaLlmService cobrancaLlmService, CarteiraService carteiraService) {
+        
         this.vectorStore = vectorStore;
         this.anthropicChatClient = anthropicChatClient;
         this.openAiChatClient = openAiChatClient;
         this.jobService = jobService;
+        this.cobrancaLlmService = cobrancaLlmService;
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.carteiraService = carteiraService;
     }
-
-
 
     public void importarCapituloLivroDificil(Resource pdfResource, String topico, String fonte) {
         processarRAG(pdfResource, topico, fonte, "universitario_avancado");
@@ -71,9 +75,7 @@ public class IngestaoMaterialService {
     }
 
     private void processarRAG(Resource pdfResource, String topico, String fonte, String nivel) {
-
         TikaDocumentReader pdfReader = new TikaDocumentReader(pdfResource);
-        
         List<Document> documentosBrutos = pdfReader.get();
         
         System.out.println("Documentos lidos pelo Tika: " + documentosBrutos.size());
@@ -85,7 +87,6 @@ public class IngestaoMaterialService {
         }
         
         TokenTextSplitter splitter = new TokenTextSplitter(1500, 400, 10, 5000, true);
-        
         List<Document> chunks = splitter.apply(documentosBrutos);
         
         chunks.forEach(chunk -> {
@@ -96,15 +97,12 @@ public class IngestaoMaterialService {
         
         this.vectorStore.accept(chunks);
         System.out.println("Sucesso: " + chunks.size() + " fragmentos [" + nivel + "] importados.");
-        
     }
 
-
-
-
-    public List<QuestaoDTO> processarPdfParaQuestoes(File pdfFile, String promptPersonalizado, String modoExtracao) {
+    public List<QuestaoDTO> processarPdfParaQuestoes(File pdfFile, String promptPersonalizado, String modoExtracao, 
+                                                     UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
         
-        List<String> jsonsBrutos = extrairTextoDePdf(pdfFile);
+        List<String> jsonsBrutos = extrairTextoDePdf(pdfFile, usuario, saldoEsgotado);
         System.out.println("JSONs brutos extraídos: " + jsonsBrutos.size() + " blocos processados.");
         
         List<QuestaoDTO> questoesExtraidas = filtrarQuestoesValidas(jsonsBrutos);
@@ -113,7 +111,7 @@ public class IngestaoMaterialService {
             if (questao.getRespostaCorreta() == null || questao.getRespostaCorreta().trim().isEmpty()) {
                 System.out.println("[PLANO B] Resolvendo questão sem gabarito oficial: " + questao.getId());
                 try {
-                    String respostaCalculada = resolverQuestaoSemGabarito(questao);
+                    String respostaCalculada = resolverQuestaoSemGabarito(questao, usuario);
                     respostaCalculada = respostaCalculada.replaceAll("[^A-E]", ""); 
                     if (!respostaCalculada.isEmpty()) {
                         questao.setRespostaCorreta(respostaCalculada);
@@ -125,15 +123,14 @@ public class IngestaoMaterialService {
             }
         }
         
-        if ("APENAS_ORIGINAIS".equals(modoExtracao)) {
-            System.out.println("Modo APENAS_ORIGINAIS detectado. Pulando o agente revisor.");
+        if ("APENAS_ORIGINAIS".equals(modoExtracao) || saldoEsgotado.get()) {
+            System.out.println("Modo APENAS_ORIGINAIS ou Saldo Esgotado detectado. Pulando o agente revisor.");
             return questoesExtraidas; 
         }
 
-        List<QuestaoDTO> questoesRevisadas = chamarAgenteRevisor(questoesExtraidas, promptPersonalizado, modoExtracao);
-
+        List<QuestaoDTO> questoesRevisadas = chamarAgenteRevisor(questoesExtraidas, promptPersonalizado, modoExtracao, usuario, saldoEsgotado);
         embaralharLoteDeQuestoes(questoesRevisadas);
-
+        System.out.println("Saldo atual após operação:" + carteiraService.consultarSaldoAtual(usuario));
         return questoesRevisadas;
     }
 
@@ -141,89 +138,8 @@ public class IngestaoMaterialService {
         return questoes;
     }
 
-
-    //  public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao) {
-    //      if (questoes == null || questoes.isEmpty()) return questoes;
-
-    //      List<QuestaoDTO> todasRevisadas = new ArrayList<>();
-    //      int tamanhoLote = 1;
-
-    //      for (int i = 0; i < questoes.size(); i += tamanhoLote) {
-    //          int fim = Math.min(i + tamanhoLote, questoes.size());
-    //          List<QuestaoDTO> loteAtual = questoes.subList(i, fim);
-            
-    //          System.out.println("Agente Revisor (OpenAI): Processando lote " + (i/tamanhoLote + 1) + " em modo " + modoExtracao);
-            
-    //          try {
-    //              String jsonLote = objectMapper.writeValueAsString(loteAtual);
-    //              String instrucao = "";
-
-    //              if ("APENAS_VARIACOES".equals(modoExtracao)) {
-    //                  instrucao = """
-    //                      Você é um Agente Pedagógico Sênior especializado em engenharia de avaliações.
-    //                      Sua missão é ler o lote de questões originais fornecido e criar DUAS VARIAÇÕES INÉDITAS para cada uma delas.
-    //                      Você DEVE DESCARTAR a questão original e retornar APENAS as variações geradas.
-
-    //                      REGRAS MANDATÓRIAS:
-    //                      1. Para CADA questão original, crie 2 variações inéditas.
-    //                      2. Mude o cenário, os valores e as marcas citadas para evitar plágio, mas mantenha a competência avaliada.
-    //                      3. No campo 'id', use o prefixo 'VAR1-' e 'VAR2-' seguido do ID original.
-    //                      4. Para o campo tópico, preencha SEMPRE com 'Redes de Computadores e a Internet'.
-    //                      5. No campo 'nivel', use EXCLUSIVAMENTE: UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO ou UNIVERSITARIO_AVANCADO.
-    //                     6. Faça as questões com 5 alternativas (A, B, C, D, E).
-    //                      """;
-    //              } else {
-    //                  instrucao = """
-    //                      Você é um Agente Pedagógico Sênior especializado em engenharia de avaliações.
-    //                      Sua missão é ler o lote de questões originais e criar UMA VARIAÇÃO INÉDITA para cada uma delas, alocando-a no campo 'questaoInspirada'.
-
-    //                      REGRAS MANDATÓRIAS:
-    //                      1. INTOCABILIDADE DA ORIGINAL: Você é ESTRITAMENTE PROIBIDO de alterar qualquer dado da questão original na raiz do objeto.
-    //                      2. A QUESTÃO INSPIRADA: O campo 'questaoInspirada' deve conter a sua variação.
-    //                         - Mude o cenário, os valores e as marcas citadas para evitar plágio.
-    //                         - No campo 'id' da questaoInspirada, use o prefixo 'INS-' seguido do ID original.
-    //                         - Para o campo tópico da questão inspirada, preencha SEMPRE com 'Redes de Computadores e a Internet'.
-    //                         - No campo 'nivel', use EXCLUSIVAMENTE: UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO ou UNIVERSITARIO_AVANCADO.
-    //                         - Faça as questões inspiradas com 5 alternativas (A, B, C, D, E).
-    //                      """;
-    //              }
-
-    //              if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) {
-    //                  instrucao += "\n\n======================================================\n";
-    //                  instrucao += "ATENÇÃO - INSTRUÇÕES ESPECÍFICAS DO USUÁRIO PARA ESTE LOTE:\n";
-    //                  instrucao += promptPersonalizado + "\n";
-    //                  instrucao += "======================================================\n";
-    //              }
-
-                
-    //              List<QuestaoDTO> loteRevisado = this.openAiChatClient.prompt()
-    //                      .system(instrucao)
-    //                      .user(u -> u.text("{dadosJson}")
-    //                                  .param("dadosJson", jsonLote))
-    //                      .options(OpenAiChatOptions.builder()
-    //                              .temperature(0.0) 
-    //                              .build())
-    //                      .call()
-    //                      .entity(new ParameterizedTypeReference<List<QuestaoDTO>>() {});
-                
-    //              if (loteRevisado != null) {
-    //                  todasRevisadas.addAll(loteRevisado);
-    //              }
-                
-    //          } catch (Exception e) {
-    //              System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
-    //              todasRevisadas.addAll(loteAtual);
-    //          }
-    //      }
-    //      return todasRevisadas;
-    //  }
-
-
-
-
-
-
-    public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao) {
+    public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao, 
+                                                UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
         if (questoes == null || questoes.isEmpty()) return questoes;
 
         List<QuestaoDTO> todasRevisadas = new ArrayList<>();
@@ -233,13 +149,17 @@ public class IngestaoMaterialService {
             int fim = Math.min(i + tamanhoLote, questoes.size());
             List<QuestaoDTO> loteAtual = questoes.subList(i, fim);
             
+            if (saldoEsgotado.get()) {
+                todasRevisadas.addAll(loteAtual);
+                continue;
+            }
+
             System.out.println("Agente Revisor: Processando lote " + (i/tamanhoLote + 1) + " em modo " + modoExtracao);
             
             try {
                 String jsonLote = objectMapper.writeValueAsString(loteAtual);
 
                 if ("APENAS_VARIACOES".equals(modoExtracao)) {
-
                     System.out.println("-> Iniciando Etapa 1: Extração do Mapa Conceitual...");
                     String promptAnalista = """
                         Você é um Agente Analista de Avaliações.
@@ -258,11 +178,14 @@ public class IngestaoMaterialService {
                         Não inclua as alternativas ou o enunciado no retorno. Retorne apenas o array JSON.
                         """;
                     
-                    String jsonGrafo = this.anthropicChatClient.prompt(promptAnalista + "\n\nLOTE DE QUESTÕES ORIGINAIS:\n" + jsonLote)
+                    ChatResponse respostaAnalista = this.anthropicChatClient.prompt(promptAnalista + "\n\nLOTE DE QUESTÕES ORIGINAIS:\n" + jsonLote)
                         .options(ChatOptions.builder().temperature(0.0).maxTokens(2000).build())
-                        .call().content();
-                    
-                    jsonGrafo = jsonGrafo.replaceAll("(?s)```json\\s*|```", "").trim();
+                        .call().chatResponse();
+                        
+                    Usage usageAnalista = respostaAnalista.getMetadata().getUsage();
+                    cobrancaLlmService.deduzirCusto(usuario, usageAnalista.getPromptTokens(), usageAnalista.getCompletionTokens(), "claude-haiku");
+
+                    String jsonGrafo = respostaAnalista.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
                     jsonGrafo = garantirFechamentoJson(jsonGrafo);
 
                     com.fasterxml.jackson.databind.JsonNode grafoArray = objectMapper.readTree(jsonGrafo);
@@ -351,11 +274,14 @@ public class IngestaoMaterialService {
                     String promptFinal = instrucaoCriador + 
                                          "\n\n=== INSTRUÇÕES DE GERAÇÃO (CRIADOR CEGO) ===\n" + instrucoesCriadorPorQuestao.toString();
 
-                    String respostaIA = this.anthropicChatClient.prompt(promptFinal)
+                    ChatResponse respostaCriador = this.anthropicChatClient.prompt(promptFinal)
                             .options(ChatOptions.builder().temperature(0.3).maxTokens(4000).build())
-                            .call().content();
+                            .call().chatResponse();
 
-                    String cleanJsonCriador = respostaIA.replaceAll("(?s)```json\\s*|```", "").trim();
+                    Usage usageCriador = respostaCriador.getMetadata().getUsage();
+                    cobrancaLlmService.deduzirCusto(usuario, usageCriador.getPromptTokens(), usageCriador.getCompletionTokens(), "claude-haiku");
+
+                    String cleanJsonCriador = respostaCriador.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
                     cleanJsonCriador = garantirFechamentoJson(cleanJsonCriador);
 
                     List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJsonCriador,
@@ -389,11 +315,14 @@ public class IngestaoMaterialService {
                         instrucao += "\n\nATENÇÃO - INSTRUÇÕES ESPECÍFICAS DO USUÁRIO:\n" + promptPersonalizado + "\n";
                     }
 
-                    String respostaIA = this.anthropicChatClient.prompt(instrucao + "\n\n LOTE DE ENTRADA:\n" + jsonLote)
+                    ChatResponse respostaIA = this.anthropicChatClient.prompt(instrucao + "\n\n LOTE DE ENTRADA:\n" + jsonLote)
                             .options(ChatOptions.builder().temperature(0.0).maxTokens(4000).build())
-                            .call().content();
+                            .call().chatResponse();
 
-                    String cleanJson = respostaIA.replaceAll("(?s)```json\\s*|```", "").trim();
+                    Usage usageIA = respostaIA.getMetadata().getUsage();
+                    cobrancaLlmService.deduzirCusto(usuario, usageIA.getPromptTokens(), usageIA.getCompletionTokens(), "claude-haiku");
+
+                    String cleanJson = respostaIA.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
                     cleanJson = garantirFechamentoJson(cleanJson);
 
                     List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJson,
@@ -402,6 +331,14 @@ public class IngestaoMaterialService {
                     todasRevisadas.addAll(loteRevisado);
                 }
                 
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
+                    System.err.println("Saldo esgotado durante a revisão do lote " + (i/tamanhoLote + 1));
+                    saldoEsgotado.set(true);
+                } else {
+                    System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+                }
+                todasRevisadas.addAll(loteAtual);
             } catch (Exception e) {
                 System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
                 todasRevisadas.addAll(loteAtual);
@@ -410,8 +347,6 @@ public class IngestaoMaterialService {
         return todasRevisadas;
     }
 
-
-   
     private void embaralharLoteDeQuestoes(List<QuestaoDTO> questoes) {
         if (questoes == null || questoes.isEmpty()) {
             return;
@@ -451,7 +386,6 @@ public class IngestaoMaterialService {
         questao.setAlternativas(novasAlternativas);
     }
 
-
     private String garantirFechamentoJson(String json) {
         long abertos = json.chars().filter(ch -> ch == '{').count();
         long fechados = json.chars().filter(ch -> ch == '}').count();
@@ -490,16 +424,13 @@ public class IngestaoMaterialService {
 
     private boolean isPaginaComTexto(String texto) {
         if (texto == null || texto.isBlank()) return false;
-
         long caracteresAlfabeticos = texto.chars()
                 .filter(Character::isLetter)
                 .count();
-
         return caracteresAlfabeticos > 50;
     }
 
-
-    public List<String> extrairTextoDePdf(File pdfFile) {
+    public List<String> extrairTextoDePdf(File pdfFile, UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
         List<String> resultadosJson = new ArrayList<>();
 
         try (PDDocument document = Loader.loadPDF(pdfFile)) {
@@ -513,14 +444,35 @@ public class IngestaoMaterialService {
             String textoCompleto = textoCompletoBuilder.toString();
 
             System.out.println("Procurando gabaritos no documento (Agnóstico a formato)...");
-            String gabaritoGlobal = mapearGabaritosGlobais(textoCompleto);
-            System.out.println("=== GABARITO GLOBAL MAPEADO ===\n" + gabaritoGlobal);
+            
+            String gabaritoGlobal = "";
+            try {
+                gabaritoGlobal = mapearGabaritosGlobais(textoCompleto, usuario);
+                System.out.println("=== GABARITO GLOBAL MAPEADO ===\n" + gabaritoGlobal);
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
+                    saldoEsgotado.set(true);
+                    return resultadosJson;
+                }
+                throw e;
+            }
 
             for (int i = 1; i <= totalPaginas; i++) {
+                if (saldoEsgotado.get()) break; 
+
                 String textoPagina = extrairTextoPagina(document, i);
                 if (!textoPagina.isBlank()) {
                     System.out.println("Processando questões da página " + i + "/" + totalPaginas);
-                    resultadosJson.add(IAQuestaoParser(textoPagina, gabaritoGlobal));
+                    try {
+                        resultadosJson.add(IAQuestaoParser(textoPagina, gabaritoGlobal, usuario));
+                    } catch (RuntimeException e) {
+                        if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
+                            System.err.println("Saldo esgotado na extração da página " + i + ". Interrompendo...");
+                            saldoEsgotado.set(true);
+                            break;
+                        }
+                        throw e;
+                    }
                 }
             }
 
@@ -530,8 +482,7 @@ public class IngestaoMaterialService {
         return resultadosJson;
     }
 
-
-     public String mapearGabaritosGlobais(String textoCompleto) {
+    public String mapearGabaritosGlobais(String textoCompleto, UsuarioEntity usuario) {
          String instrucao = """
              OBJETIVO: Você é um extrator especialista em gabaritos de provas de concursos e exames.
              Sua única tarefa é vasculhar o texto completo do documento fornecido e encontrar as respostas (gabaritos) das questões.
@@ -551,15 +502,20 @@ public class IngestaoMaterialService {
              NÃO retorne nenhum texto extra, introdução, explicação ou formatação markdown.
              """;
 
-         return this.openAiChatClient.prompt(instrucao + "\n\nTEXTO DO DOCUMENTO:\n" + textoCompleto)
+         ChatResponse response = this.openAiChatClient.prompt(instrucao + "\n\nTEXTO DO DOCUMENTO:\n" + textoCompleto)
                  .options(ChatOptions.builder()
                          .temperature(0.0) 
                          .maxTokens(1024) 
                          .build())
-                 .call().content();
-     }
+                 .call().chatResponse();
+                 
+         Usage usage = response.getMetadata().getUsage();
+         cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
 
-    public String resolverQuestaoSemGabarito(QuestaoDTO questao) {
+         return response.getResult().getOutput().getText();
+    }
+
+    public String resolverQuestaoSemGabarito(QuestaoDTO questao, UsuarioEntity usuario) {
         String instrucao = """
             OBJETIVO: Você é um professor especialista resolvendo uma questão de prova.
             Leia o enunciado e as alternativas fornecidas.
@@ -576,17 +532,19 @@ public class IngestaoMaterialService {
             );
         }
 
-        return this.openAiChatClient.prompt(instrucao + "\n\nQUESTÃO:\n" + textoQuestao.toString())
+        ChatResponse response = this.openAiChatClient.prompt(instrucao + "\n\nQUESTÃO:\n" + textoQuestao.toString())
                 .options(ChatOptions.builder()
                         .temperature(0.2) 
                         .maxTokens(10) 
                         .build())
-                .call().content().trim();
+                .call().chatResponse();
+                
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        return response.getResult().getOutput().getText().trim();
     }
 
-
-    public String IAQuestaoParser(String textoPagina, String textoGabarito) {
-
+    public String IAQuestaoParser(String textoPagina, String textoGabarito, UsuarioEntity usuario) {
         String instrucao = """
             OBJETIVO: Você é um extrator e conversor de dados JSON estrito. Converta o texto abaixo em um array JSON.
 
@@ -664,12 +622,17 @@ public class IngestaoMaterialService {
                 "\n\nCONTEXTO DE APOIO (GABARITOS NO FORMATO 'N: LETRA'):\n" + textoGabarito +
                 "\n\nTEXTO PARA EXTRAÇÃO:\n" + textoPagina;
 
-        return this.anthropicChatClient.prompt(promptCompleto)
+        ChatResponse response = this.anthropicChatClient.prompt(promptCompleto)
                 .options(ChatOptions.builder()
                         .temperature(0.0)
                         .maxTokens(4096)
                         .build())
-                .call().content();
+                .call().chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "claude-haiku");
+
+        return response.getResult().getOutput().getText();
     }
 
     public List<QuestaoDTO> filtrarQuestoesValidas(List<String> paginasJson) {
@@ -789,19 +752,22 @@ public class IngestaoMaterialService {
         }
     }
 
-
     @Async
-    public void enfileirarProcessamentoPdf(String jobId, File pdfFile, String disciplinaId, String promptPersonalizado, String modoExtracao) { 
-
+    public void enfileirarProcessamentoPdf(String jobId, File pdfFile, String disciplinaId, String promptPersonalizado, 
+                                           String modoExtracao, UsuarioEntity usuario) { 
         try {
             ExtracaoJobEntity jobInicio = jobService.buscarPorId(jobId).orElseThrow();
             jobInicio.setStatus("PROCESSING");
             jobService.salvar(jobInicio);
             System.out.println("[ASYNC WORKER] Iniciando extração para o Job ID: " + jobId + " na disciplina: " + disciplinaId);
 
-            List<QuestaoDTO> questoesExtraidas = processarPdfParaQuestoes(pdfFile, promptPersonalizado, modoExtracao);
+            cobrancaLlmService.verificarSaldoMinimo(usuario);
 
-            if (questoesExtraidas != null) {
+            AtomicBoolean saldoEsgotado = new AtomicBoolean(false);
+
+            List<QuestaoDTO> questoesExtraidas = processarPdfParaQuestoes(pdfFile, promptPersonalizado, modoExtracao, usuario, saldoEsgotado);
+
+            if (questoesExtraidas != null && !questoesExtraidas.isEmpty()) {
                 questoesExtraidas = achatarListaDeQuestoes(questoesExtraidas);
                 questoesExtraidas.forEach(questao -> {
                     questao.setDisciplinaId(disciplinaId);
@@ -810,10 +776,16 @@ public class IngestaoMaterialService {
 
             ExtracaoJobEntity jobConcluido = jobService.buscarPorId(jobId).orElseThrow();
             jobConcluido.setResultadoJson(objectMapper.writeValueAsString(questoesExtraidas));
-            jobConcluido.setStatus("COMPLETED");
-            jobService.salvar(jobConcluido);
             
-            System.out.println("[ASYNC WORKER] Sucesso no Job ID: " + jobId);
+            if (saldoEsgotado.get()) {
+                jobConcluido.setStatus("PARCIALMENTE_CONCLUIDO");
+                jobConcluido.setMensagemErro("O saldo esgotou durante o processamento. As questões geradas até o momento foram salvas com sucesso.");
+            } else {
+                jobConcluido.setStatus("COMPLETED");
+            }
+            
+            jobService.salvar(jobConcluido);
+            System.out.println("[ASYNC WORKER] Sucesso/Parcial no Job ID: " + jobId);
 
         } catch (Exception e) {
             System.err.println("[ASYNC WORKER] Falha no Job ID: " + jobId + " - " + e.getMessage());
@@ -826,10 +798,8 @@ public class IngestaoMaterialService {
             } catch (Exception ex) {
                 System.err.println("[ASYNC WORKER] Falha crítica ao tentar salvar status de erro: " + ex.getMessage());
             }
-            
         } 
     }
-
 
     private List<QuestaoDTO> achatarListaDeQuestoes(List<QuestaoDTO> questoesOriginais) {
         List<QuestaoDTO> listaAchatada = new ArrayList<>();
@@ -845,7 +815,4 @@ public class IngestaoMaterialService {
         
         return listaAchatada;
     }
-
-
-
 }

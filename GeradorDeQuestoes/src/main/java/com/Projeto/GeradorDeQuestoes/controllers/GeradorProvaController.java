@@ -6,10 +6,12 @@ import com.Projeto.GeradorDeQuestoes.dto.GerarQuestaoRequest;
 import com.Projeto.GeradorDeQuestoes.dto.Prova;
 import com.Projeto.GeradorDeQuestoes.dto.Questao;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.GeradorProvaService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -56,11 +58,12 @@ public class GeradorProvaController {
     @PostMapping("/{id}/questoes")
     public ResponseEntity<Prova> adicionarQuestoes(
             @PathVariable UUID id, 
-            @RequestBody GerarQuestaoRequest request) {
+            @RequestBody GerarQuestaoRequest request,
+        @AuthenticationPrincipal UsuarioEntity usuario) {
         
         try {
 
-            Prova prova = provaService.adicionarQuestoes(id, request);
+            Prova prova = provaService.adicionarQuestoes(id, request, usuario);
             return ResponseEntity.ok(prova);
 
         } catch (Exception e) {
@@ -73,7 +76,8 @@ public class GeradorProvaController {
     @PostMapping("/{id}/questoes-automaticas")
     public ResponseEntity<?> adicionarQuestoesAutomatico(
             @PathVariable UUID id, 
-            @RequestBody GeracaoAutomaticaRequest request) {
+            @RequestBody GeracaoAutomaticaRequest request,
+        @AuthenticationPrincipal UsuarioEntity usuario) {
 
         try {
 
@@ -81,7 +85,7 @@ public class GeradorProvaController {
                     System.out.println("Processando documento ID: " + doc.getDocumentoId());
             });
             
-            Prova prova = provaService.adicionarQuestoesAutomatico(id, request);
+            Prova prova = provaService.adicionarQuestoesAutomatico(id, request, usuario);
             return ResponseEntity.ok(prova);
 
         } 

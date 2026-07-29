@@ -6,14 +6,17 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
 import com.Projeto.GeradorDeQuestoes.dto.JobResponseDTO;
 import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.PdfQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.services.ExtracaoJobService;
 import com.Projeto.GeradorDeQuestoes.services.IngestaoMaterialService;
@@ -112,7 +115,8 @@ public class IngestaoController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("disciplinaId") String disciplinaId,
             @RequestParam(value = "prompt", required = false) String promptPersonalizado,
-            @RequestParam("modoExtracao") String modoExtracao) { 
+            @RequestParam("modoExtracao") String modoExtracao,
+            @AuthenticationPrincipal UsuarioEntity usuarioLogado) { 
     
         File tempFile = null;
         try {
@@ -132,7 +136,7 @@ public class IngestaoController {
             novoJob.setCaminhoArquivoTemporario(tempFile.getAbsolutePath()); 
             jobService.salvar(novoJob);
             
-            ingestaoService.enfileirarProcessamentoPdf(jobId, tempFile, disciplinaId, promptPersonalizado, modoExtracao);
+            ingestaoService.enfileirarProcessamentoPdf(jobId, tempFile, disciplinaId, promptPersonalizado, modoExtracao, usuarioLogado);
             
             JobResponseDTO response = new JobResponseDTO(
                     jobId, "PENDING", "Processamento iniciado em segundo plano."
@@ -146,7 +150,5 @@ public class IngestaoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-
 
 }

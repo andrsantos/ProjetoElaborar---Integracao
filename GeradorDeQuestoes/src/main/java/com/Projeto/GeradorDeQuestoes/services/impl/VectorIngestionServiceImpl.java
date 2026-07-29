@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import com.Projeto.GeradorDeQuestoes.dto.ResultadoIngestaoDTO;
 import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.ConceitoEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.services.ConceitoService;
 import com.Projeto.GeradorDeQuestoes.services.GeradorQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.VectorIngestionService;
@@ -46,7 +47,7 @@ public class VectorIngestionServiceImpl implements VectorIngestionService {
 
 
     @Override
-    public ResultadoIngestaoDTO ingerirPdf(byte[] pdfBytes, String filename, Map<String, Object> metadata) {
+    public ResultadoIngestaoDTO ingerirPdf(byte[] pdfBytes, String filename, Map<String, Object> metadata, UsuarioEntity usuario) {
 
         ByteArrayResource resource = new ByteArrayResource(pdfBytes) {
             @Override
@@ -98,7 +99,7 @@ public class VectorIngestionServiceImpl implements VectorIngestionService {
             .map(Document::getText)
             .collect(Collectors.joining("\n"));
 
-        List<String> conceitosGlobais = geradorQuestaoService.extrairConceitosUnicos(textoCompleto, 20);
+        List<String> conceitosGlobais = geradorQuestaoService.extrairConceitosUnicos(textoCompleto, 20, usuario);
         
         String tituloDocumento = (String) metadata.get("titulo_documento");
         UUID documentoId = UUID.fromString((String) metadata.get("documento_id"));

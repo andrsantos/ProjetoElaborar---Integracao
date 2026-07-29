@@ -7,17 +7,19 @@ import com.Projeto.GeradorDeQuestoes.dto.ListaQuestoes;
 import com.Projeto.GeradorDeQuestoes.dto.Questao;
 import com.Projeto.GeradorDeQuestoes.entities.DocumentosReferenciaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.PdfQuestaoEntity;
-// import com.Projeto.GeradorDeQuestoes.entities.PromptEntity;
-// import com.Projeto.GeradorDeQuestoes.entities.TopicoConfigEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.repositories.DocumentosReferenciaRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.PdfQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.PromptRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.TopicoConfigRepository;
+import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 import com.Projeto.GeradorDeQuestoes.services.GeradorQuestaoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -40,6 +42,7 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
     private final VectorStore vectorStore;
     private final DocumentosReferenciaRepository documentosRepository;
     private final PdfQuestaoRepository pdfQuestaoRepository;
+    private final CobrancaLlmService cobrancaLlmService;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -50,18 +53,19 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
                                      PromptRepository promptRepository,
                                      @Qualifier("anthropicChatClient") ChatClient anthropicChatClient, 
                                      DocumentosReferenciaRepository documentosRepository, 
-                                     PdfQuestaoRepository pdfQuestaoRepository) {
+                                     PdfQuestaoRepository pdfQuestaoRepository, CobrancaLlmService cobrancaLlmService) {
         this.openAiChatClient = openAiChatClient;
         this.anthropicChatClient = anthropicChatClient;
         this.vectorStore = vectorStore;
         this.documentosRepository = documentosRepository;
         this.pdfQuestaoRepository = pdfQuestaoRepository;
+        this.cobrancaLlmService = cobrancaLlmService;
     }
 
 
 
     @Override
-    public ListaQuestoes gerarQuestoes(GerarQuestaoRequest request) {
+    public ListaQuestoes gerarQuestoes(GerarQuestaoRequest request, UsuarioEntity usuario) {
         
         List<Questao> todasAsQuestoes = new ArrayList<>();
 
@@ -81,26 +85,29 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
 
             if (buscaGeral) {
                 if (bloco.getQuantidadeFaceis() > 0) {
-                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "FACIL", bloco.getQuantidadeFaceis(), diretriz));
+                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "FACIL", bloco.getQuantidadeFaceis(), diretriz,usuario));
                 }
                 if (bloco.getQuantidadeMedias() > 0) {
-                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "MEDIO", bloco.getQuantidadeMedias(), diretriz));
+                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "MEDIO", bloco.getQuantidadeMedias(), diretriz, usuario));
                 }
                 if (bloco.getQuantidadeDificeis() > 0) {
-                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "DIFICIL", bloco.getQuantidadeDificeis(), diretriz));
+                    todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), "", "DIFICIL", bloco.getQuantidadeDificeis(), diretriz, usuario));
                 }
             } else {
                 for (var conceitoDto : bloco.getSubtopicos()) {
                     String nomeConceito = conceitoDto.getConceito();
                     
                     if (conceitoDto.getQuantidadeFaceis() > 0) {
-                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "FACIL", conceitoDto.getQuantidadeFaceis(), diretriz));
+                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "FACIL", conceitoDto.getQuantidadeFaceis(), diretriz,
+                         usuario));
                     }
                     if (conceitoDto.getQuantidadeMedias() > 0) {
-                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "MEDIO", conceitoDto.getQuantidadeMedias(), diretriz));
+                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "MEDIO", conceitoDto.getQuantidadeMedias(), diretriz,
+                    usuario));
                     }
                     if (conceitoDto.getQuantidadeDificeis() > 0) {
-                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "DIFICIL", conceitoDto.getQuantidadeDificeis(), diretriz));
+                        todasAsQuestoes.addAll(gerarQuestoesParaConceito(bloco.getDocumentoId(), nomeConceito, "DIFICIL", conceitoDto.getQuantidadeDificeis(), diretriz, 
+                    usuario));
                     }
                 }
             }
@@ -110,7 +117,8 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
         return new ListaQuestoes(todasAsQuestoes);
     }
 
-    private List<Questao> gerarQuestoesParaConceito(String documentoId, String conceito, String nivel, int quantidadeSolicitada, String diretrizCustomizada) {
+    private List<Questao> gerarQuestoesParaConceito(String documentoId, String conceito, String nivel, int quantidadeSolicitada, 
+        String diretrizCustomizada, UsuarioEntity usuario) {
         List<Questao> blocoFinal = new ArrayList<>();
         
         String tituloDocumento;
@@ -141,12 +149,17 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
 
             if (isOrigemProva) {
                 System.out.println("🧠 Acionando Agente Variador para conceito: " + conceitoDeExibicao);
-                String questaoRaw = chamarAgenteVariador(tituloDocumento, nivel, contextoDoConceito, conceitoDeExibicao);
+                String questaoRaw = chamarAgenteVariador(tituloDocumento, nivel, contextoDoConceito, conceitoDeExibicao, usuario);
                 questoesGeradas = parsearRespostaTags(questaoRaw);
             } else {
                 System.out.println("✍️ Acionando Agente Elaborador Sênior em LOTE para criar " + quantidadeSolicitada + " questões de: " + conceitoDeExibicao);
                 
-                String elaboradaRaw = chamarAgenteElaboradorEmLote(tituloDocumento, nivel, contextoDoConceito, conceitoDeExibicao, quantidadeSolicitada, diretrizCustomizada);
+                String elaboradaRaw = chamarAgenteElaboradorEmLote(tituloDocumento, nivel, 
+                    contextoDoConceito, 
+                    conceitoDeExibicao, 
+                    quantidadeSolicitada, 
+                    diretrizCustomizada,
+                 usuario);
                 questoesGeradas = parsearRespostaTags(elaboradaRaw);
             }
 
@@ -154,10 +167,10 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
                 if (blocoFinal.size() >= quantidadeSolicitada) break;
 
                 try {
-                    Questao questaoFinal = chamarAgenteJulgador(q, conceitoDeExibicao);
+                    Questao questaoFinal = chamarAgenteJulgador(q, conceitoDeExibicao, usuario);
                     questaoFinal.setConceito(conceitoDeExibicao); 
                     
-                    AvaliacaoQuestao avaliacao = chamarAgenteAvaliador(questaoFinal);
+                    AvaliacaoQuestao avaliacao = chamarAgenteAvaliador(questaoFinal, usuario);
                     questaoFinal.setCompetencia(avaliacao.getCompetencia());
                     questaoFinal.setComentarioTecnico(avaliacao.getComentarioTecnico());
                     
@@ -231,9 +244,18 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
     }
     
     @Override
-    public List<String> extrairConceitosUnicos(String contexto, int qtd) {
+    public List<String> extrairConceitosUnicos(String contexto, int qtd, UsuarioEntity usuario) {
         String prompt = "Liste exatamente %d conceitos técnicos distintos (ex: Protocolo, Atraso de Fila) baseados no material: %s. Separe os itens obrigatoriamente por VÍRGULA.".formatted(qtd, contexto);
-        String r = this.openAiChatClient.prompt(prompt).options(ChatOptions.builder().temperature(0.7).build()).call().content();
+
+        ChatResponse response = this.openAiChatClient.prompt(prompt)
+                .options(ChatOptions.builder().temperature(0.7).build())
+                .call()
+                .chatResponse();
+                
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        String r = response.getResult().getOutput().getText();
         
         String[] partes = r.split(",|\\n|\\r|\\d+\\.");
         
@@ -321,7 +343,7 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
         return "";
     }
 
-    private Questao chamarAgenteJulgador(Questao questao, String conceito) { 
+    private Questao chamarAgenteJulgador(Questao questao, String conceito, UsuarioEntity usuario) { 
 
         String alternativasFormatadas = questao.getAlternativas().entrySet().stream()
                 .map(e -> "[" + e.getKey().toUpperCase() + "] " + e.getValue())
@@ -374,10 +396,16 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
                 questao.getExplicacao()                     
         );
 
-        String resposta = this.openAiChatClient.prompt(prompt)
+
+        ChatResponse response = this.openAiChatClient.prompt(prompt)
                 .options(ChatOptions.builder().temperature(0.1).build())
                 .call()
-                .content();
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        String resposta = response.getResult().getOutput().getText();
 
         List<Questao> questoesMelhoradas = parsearRespostaTags(resposta);
         if (!questoesMelhoradas.isEmpty()) {
@@ -392,7 +420,7 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
         return questao;
     }
 
-    private AvaliacaoQuestao chamarAgenteAvaliador(Questao questao){
+    private AvaliacaoQuestao chamarAgenteAvaliador(Questao questao, UsuarioEntity usuario){
 
       String prompt = """
         Você é um avaliador especialista em elaboração de questões de redes de computadores
@@ -438,10 +466,16 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
             questao.getRespostaCorreta().toUpperCase()
         );
 
-        String resposta = this.openAiChatClient.prompt(prompt)
-        .options(ChatOptions.builder().temperature(0.1).build())
-        .call()
-        .content();
+
+        ChatResponse response = this.openAiChatClient.prompt(prompt)
+                .options(ChatOptions.builder().temperature(0.1).build())
+                .call()
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        String resposta = response.getResult().getOutput().getText();
 
         resposta = resposta
         .replace("```json", "")
@@ -456,7 +490,7 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
     }
 
 
-    private String chamarAgenteVariador(String topico, String nivel, String contexto, String conceito) {
+    private String chamarAgenteVariador(String topico, String nivel, String contexto, String conceito, UsuarioEntity usuario) {
         
         String templateBase = """
             Você é um especialista em engenharia reversa de bancas examinadoras de concursos e provas universitárias.
@@ -502,14 +536,21 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
             "conceito", conceito
         );
 
-        return this.openAiChatClient.prompt(template.render(params))
+
+        ChatResponse response = this.openAiChatClient.prompt(template.render(params))
                 .options(ChatOptions.builder().temperature(0.7).build()) 
                 .call()
-                .content();
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        return response.getResult().getOutput().getText();
     }
 
 
-    private String chamarAgenteElaboradorEmLote(String topico, String nivel, String contexto, String conceito, int quantidade, String diretrizCustomizada) {
+    private String chamarAgenteElaboradorEmLote(String topico, String nivel, String contexto, String conceito, int quantidade, 
+        String diretrizCustomizada, UsuarioEntity usuario) {
         
         String diretrizSegura = (diretrizCustomizada != null && !diretrizCustomizada.isBlank()) 
                                 ? "\n### DIRETRIZES PERSONALIZADAS DO PROFESSOR (PRIORIDADE MÁXIMA) ###\n" + diretrizCustomizada + "\n" 
@@ -564,16 +605,22 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
             "diretrizSegura", diretrizSegura
         );
 
-        return this.openAiChatClient.prompt(template.render(params))
+
+        ChatResponse response = this.openAiChatClient.prompt(template.render(params))
                 .options(ChatOptions.builder().temperature(0.7).build()) 
                 .call()
-                .content();
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        return response.getResult().getOutput().getText();
     }
 
 
 
 
-    private String chamarAgenteSubstituto(String conceito, String enunciadoAntigo) {
+    private String chamarAgenteSubstituto(String conceito, String enunciadoAntigo, UsuarioEntity usuario) {
         String templateBase = """
             Você é um Professor Universitário Sênior e membro de uma banca examinadora rigorosa.
             O usuário deseja substituir a seguinte questão sobre o conceito '{conceito}':
@@ -609,25 +656,31 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
             "enunciadoAntigo", enunciadoAntigo
         );
 
-        return this.openAiChatClient.prompt(template.render(params))
+
+        ChatResponse response = this.openAiChatClient.prompt(template.render(params))
                 .options(ChatOptions.builder().temperature(0.8).build()) 
                 .call()
-                .content();
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+        
+        return response.getResult().getOutput().getText();
     }
 
 
 
 
     @Override
-    public Questao gerarQuestaoSubstitutaAvulsa(String conceito, String enunciadoAntigo, String nivel) {
+    public Questao gerarQuestaoSubstitutaAvulsa(String conceito, String enunciadoAntigo, String nivel, UsuarioEntity usuario) {
         System.out.println("🔄 Iniciando geração de substituta direta via IA para o conceito: " + conceito);
         
-        String raw = chamarAgenteSubstituto(conceito, enunciadoAntigo);
+        String raw = chamarAgenteSubstituto(conceito, enunciadoAntigo, usuario);
         
         List<Questao> questoesParseadas = parsearRespostaTags(raw);
         if (questoesParseadas.isEmpty()) {
             System.out.println("⚠️ Regex primário falhou. Delegando limpeza para o Agente Parseador (Claude)...");
-            questoesParseadas = parsearComAgenteClaude(raw);
+            questoesParseadas = parsearComAgenteClaude(raw, usuario);
         }
 
         if (questoesParseadas.isEmpty()) {
@@ -636,10 +689,10 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
         
         Questao questaoBruta = questoesParseadas.get(0);
 
-        Questao questaoFinal = chamarAgenteJulgador(questaoBruta, conceito);
+        Questao questaoFinal = chamarAgenteJulgador(questaoBruta, conceito, usuario);
         questaoFinal.setConceito(conceito);
         
-        AvaliacaoQuestao avaliacao = chamarAgenteAvaliador(questaoFinal);
+        AvaliacaoQuestao avaliacao = chamarAgenteAvaliador(questaoFinal, usuario);
         questaoFinal.setCompetencia(avaliacao.getCompetencia());
         questaoFinal.setComentarioTecnico(avaliacao.getComentarioTecnico());
         questaoFinal.setNivel(converterDeStringParaNivelTecnico(nivel));
@@ -648,7 +701,7 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
         return questaoFinal;
     }
 
-    private List<Questao> parsearComAgenteClaude(String rawText) {
+    private List<Questao> parsearComAgenteClaude(String rawText, UsuarioEntity usuario) {
 
         System.out.println("🤖 Acionando Agente Parseador (Claude) para corrigir formatação...");
 
@@ -676,10 +729,16 @@ public class GeradorQuestaoServiceImpl implements GeradorQuestaoService {
             %s
             """.formatted(rawText);
 
-        String respostaNormalizada = this.anthropicChatClient.prompt(prompt)
+
+        ChatResponse response = this.anthropicChatClient.prompt(prompt)
                 .options(ChatOptions.builder().temperature(0.0).build()) 
                 .call()
-                .content();
+                .chatResponse();
+
+        Usage usage = response.getMetadata().getUsage();
+        cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "claude-haiku"); 
+        
+        String respostaNormalizada = response.getResult().getOutput().getText();
 
         return parsearRespostaTags(respostaNormalizada);
     }

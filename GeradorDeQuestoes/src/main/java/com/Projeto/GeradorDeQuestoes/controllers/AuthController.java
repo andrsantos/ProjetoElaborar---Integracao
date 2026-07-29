@@ -5,6 +5,7 @@ import com.Projeto.GeradorDeQuestoes.dto.LoginResponseDTO;
 import com.Projeto.GeradorDeQuestoes.dto.RegisterDTO;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.UsuarioRepository;
+import com.Projeto.GeradorDeQuestoes.services.CarteiraService;
 import com.Projeto.GeradorDeQuestoes.services.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,9 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private CarteiraService carteiraService;
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
         var usernamePassword = new UsernamePasswordAuthenticationToken(data.getEmail(), data.getSenha());
@@ -47,7 +51,7 @@ public class AuthController {
         UsuarioEntity novoUsuario = new UsuarioEntity(data.getEmail(), encryptedPassword);
 
         this.repository.save(novoUsuario);
-
+        this.carteiraService.inicializarCarteiraFreemium(novoUsuario);
         return ResponseEntity.ok().build();
     }
 }

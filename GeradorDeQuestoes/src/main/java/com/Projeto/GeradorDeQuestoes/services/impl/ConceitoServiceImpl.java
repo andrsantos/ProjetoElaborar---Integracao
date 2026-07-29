@@ -1,9 +1,13 @@
 package com.Projeto.GeradorDeQuestoes.services.impl;
 
 import com.Projeto.GeradorDeQuestoes.entities.ConceitoEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.ConceitoRepository;
+import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 import com.Projeto.GeradorDeQuestoes.services.ConceitoService;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -22,10 +26,14 @@ public class ConceitoServiceImpl implements ConceitoService {
 
     private final ConceitoRepository conceitoRepository;
     private final ChatClient anthropicChatClient; 
+    private final CobrancaLlmService cobrancaLlmService;
 
-    public ConceitoServiceImpl(ConceitoRepository conceitoRepository, ChatClient anthropicChatClient) {
+    public ConceitoServiceImpl(ConceitoRepository conceitoRepository, 
+        ChatClient anthropicChatClient, 
+        CobrancaLlmService cobrancaLlmService) {
         this.conceitoRepository = conceitoRepository;
         this.anthropicChatClient = anthropicChatClient;
+        this.cobrancaLlmService = cobrancaLlmService;
     }
 
     @Override
@@ -105,8 +113,10 @@ public class ConceitoServiceImpl implements ConceitoService {
     }
 
 
+
     @Override
-    public List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina) {
+    public List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina, 
+        UsuarioEntity usuario) {
         var outputConverter = new ListOutputConverter(new DefaultConversionService());
         String formatInstructions = outputConverter.getFormat();
 
@@ -139,9 +149,14 @@ public class ConceitoServiceImpl implements ConceitoService {
         );
 
         try {
-            String respostaJson = this.anthropicChatClient.prompt(promptTemplate.render(params))
+            ChatResponse response = this.anthropicChatClient.prompt(promptTemplate.render(params))
                 .call()
-                .content();
+                .chatResponse();
+
+            Usage usage = response.getMetadata().getUsage();
+            cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "claude-haiku");
+
+            String respostaJson = response.getResult().getOutput().getText();
 
             return outputConverter.convert(respostaJson);
 
@@ -150,6 +165,7 @@ public class ConceitoServiceImpl implements ConceitoService {
             return List.of("Fundamentos de " + nomeDisciplina, "Tópicos Avançados", "Aplicações Práticas");
         }
     }
+
 
     @Override
     @Transactional

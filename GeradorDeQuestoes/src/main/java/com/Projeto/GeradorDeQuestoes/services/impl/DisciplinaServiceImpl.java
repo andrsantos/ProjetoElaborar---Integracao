@@ -60,7 +60,7 @@ public class DisciplinaServiceImpl implements DisciplinaService{
 
     @Override
     @Transactional 
-    public DisciplinaEntity salvar(DisciplinaEntity disciplina) {
+    public DisciplinaEntity salvar(DisciplinaEntity disciplina, UsuarioEntity usuario) {
 
         Optional<DisciplinaEntity> existente = disciplinaRepository.findByNomeIgnoreCase(disciplina.getNome());
         if (existente.isPresent() && !existente.get().getId().equals(disciplina.getId())) {
@@ -101,7 +101,8 @@ public class DisciplinaServiceImpl implements DisciplinaService{
                 System.out.println("🤖 Nenhum template compatível. Acionando IA (Claude) para gerar árvore semente...");
                 macroTopicos = conceitoService.gerarArvoreSemente(
                     disciplinaSalva.getNome(), 
-                    disciplinaSalva.getDescricao()
+                    disciplinaSalva.getDescricao(),
+                    usuario
                 );
             }
 

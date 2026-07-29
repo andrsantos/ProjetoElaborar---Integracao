@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -15,9 +17,11 @@ import com.Projeto.GeradorDeQuestoes.dto.ClassificacaoDTO;
 import com.Projeto.GeradorDeQuestoes.dto.ConceitoConfigDTO;
 import com.Projeto.GeradorDeQuestoes.dto.GeracaoAutomaticaRequest;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
+import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 
 
 @Service
@@ -25,12 +29,15 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
 
     private BancoQuestaoRepository bancoQuestaoRepository;
     private final ChatClient chatClient;
+    private final CobrancaLlmService cobrancaLlmService;
 
 
     BancoQuestaoServiceImpl(BancoQuestaoRepository bancoQuestaoRepository, 
-        @Qualifier("openAiChatClient") ChatClient chatClient) {
+        @Qualifier("openAiChatClient") ChatClient chatClient, 
+        CobrancaLlmService cobrancaLlmService) {
         this.chatClient = chatClient;
         this.bancoQuestaoRepository = bancoQuestaoRepository;
+        this.cobrancaLlmService = cobrancaLlmService;
     }
 
     @Override
@@ -279,8 +286,9 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
     //     }
     // }
 
-    @Override
-    public String normalizarConceito(String enunciado, String conceitoSugerido, List<String> conceitosExistentes) {
+   @Override
+    public String normalizarConceito(String enunciado, String conceitoSugerido, List<String> conceitosExistentes, 
+        UsuarioEntity usuario) {
         
         if (conceitosExistentes == null || conceitosExistentes.isEmpty()) {
             return conceitoSugerido != null ? conceitoSugerido : "Geral";
@@ -320,10 +328,15 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
         );
 
         try {
-            String respostaJson = this.chatClient.prompt(promptTemplate.render(params))
+            ChatResponse response = this.chatClient.prompt(promptTemplate.render(params))
                 .options(ChatOptions.builder().temperature(0.0).build()) 
                 .call()
-                .content();
+                .chatResponse();
+
+            Usage usage = response.getMetadata().getUsage();
+            cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+
+            String respostaJson = response.getResult().getOutput().getText();
 
             ClassificacaoDTO decisao = outputConverter.convert(respostaJson);
             
@@ -335,9 +348,6 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
             return conceitoSugerido != null ? conceitoSugerido : "Geral";
         }
     }
-
-
-
 
 
 

@@ -44,7 +44,7 @@ public class DisciplinaController {
         DisciplinaEntity novaDisciplina = new DisciplinaEntity(dto.getNome(), dto.getDescricao(), usuarioLogado);
         
 
-        service.salvar(novaDisciplina);
+        service.salvar(novaDisciplina, usuarioLogado);
         return ResponseEntity.ok(novaDisciplina);
     }
 
@@ -62,20 +62,20 @@ public class DisciplinaController {
 
     // }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable String id, @RequestBody DisciplinaEntity disciplina) {
+    // @PutMapping("/{id}")
+    // public ResponseEntity<?> atualizar(@PathVariable String id, @RequestBody DisciplinaEntity disciplina) {
 
-        return service.buscarPorId(id).map(existente -> {
-            existente.setNome(disciplina.getNome());
-            try {
-                DisciplinaEntity atualizada = service.salvar(existente);
-                return ResponseEntity.ok(atualizada);
-            } catch (RuntimeException e) {
-                return ResponseEntity.badRequest().body(e.getMessage());
-            }
-        }).orElse(ResponseEntity.notFound().build());
+    //     return service.buscarPorId(id).map(existente -> {
+    //         existente.setNome(disciplina.getNome());
+    //         try {
+    //             DisciplinaEntity atualizada = service.salvar(existente);
+    //             return ResponseEntity.ok(atualizada);
+    //         } catch (RuntimeException e) {
+    //             return ResponseEntity.badRequest().body(e.getMessage());
+    //         }
+    //     }).orElse(ResponseEntity.notFound().build());
 
-    }
+    // }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletar(@PathVariable String id) {

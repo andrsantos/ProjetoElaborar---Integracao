@@ -2,6 +2,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { CarteiraService } from '../../services/carteira/carteira-service';
 
 interface BreadcrumbModel {
   label: string;
@@ -17,10 +18,12 @@ interface BreadcrumbModel {
 })
 export class Breadcrumb implements OnInit {
   breadcrumbs: BreadcrumbModel[] = [];
+  public saldoAtual: number = 0;
 
   constructor(
     private router: Router,
-    @Inject(PLATFORM_ID) private platformId: Object 
+    @Inject(PLATFORM_ID) private platformId: Object ,
+    private carteiraService: CarteiraService
   ) {}
 
   ngOnInit(): void {
@@ -29,8 +32,19 @@ export class Breadcrumb implements OnInit {
       .subscribe((event: any) => {
         this.buildHierarchy(event.urlAfterRedirects);
       });
-    
     this.buildHierarchy(this.router.url);
+    this.carregarSaldo();
+  }
+
+  carregarSaldo(): void {
+    this.carteiraService.getSaldo().subscribe({
+      next: (saldo) => {
+        this.saldoAtual = saldo;
+      },
+      error: (err) => {
+        console.error('Erro ao buscar o saldo da carteira', err);
+      }
+    });
   }
 
   private buildHierarchy(url: string): void {

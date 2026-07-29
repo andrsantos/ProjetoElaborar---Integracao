@@ -10,7 +10,7 @@ public interface DisciplinaService {
     List<DisciplinaEntity> listarTodas();
     List<DisciplinaEntity> listarTodasPorUsuario(UsuarioEntity usuarioLogado);
     Optional<DisciplinaEntity> buscarPorId(String id);
-    DisciplinaEntity salvar(DisciplinaEntity disciplina);
+    DisciplinaEntity salvar(DisciplinaEntity disciplina, UsuarioEntity usuario);
     void deletar(String id);
     void deletarDisciplina(String id);
     

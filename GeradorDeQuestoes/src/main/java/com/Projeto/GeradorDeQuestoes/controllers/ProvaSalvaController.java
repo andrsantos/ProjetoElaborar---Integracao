@@ -7,6 +7,7 @@ import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.DisciplinaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.ProvaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.QuestaoProvaEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.TipoQuestao;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.ProvaRepository;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -230,7 +232,9 @@ public class ProvaSalvaController {
     }
 
     @PostMapping("/gerar-substituta-ia")
-    public ResponseEntity<?> gerarQuestaoSubstitutaIa(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> gerarQuestaoSubstitutaIa(@RequestBody Map<String, String> payload,
+        @AuthenticationPrincipal UsuarioEntity usuario
+    ) {
     
         String disciplinaId = payload.get("disciplinaId");
         String conceito = payload.get("conceito");
@@ -241,7 +245,7 @@ public class ProvaSalvaController {
 
         try {
 
-            Questao questaoGerada = geradorQuestaoService.gerarQuestaoSubstitutaAvulsa(conceito, enunciadoAntigo, nivel);
+            Questao questaoGerada = geradorQuestaoService.gerarQuestaoSubstitutaAvulsa(conceito, enunciadoAntigo, nivel, usuario);
 
             BancoQuestaoEntity novaQuestao = new BancoQuestaoEntity();
             novaQuestao.setDisciplinaId(disciplinaId);

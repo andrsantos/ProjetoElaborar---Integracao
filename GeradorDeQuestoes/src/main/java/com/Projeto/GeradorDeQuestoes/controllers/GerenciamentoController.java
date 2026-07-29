@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,9 @@ import com.Projeto.GeradorDeQuestoes.dto.ResultadoIngestaoDTO;
 import com.Projeto.GeradorDeQuestoes.dto.TopicoConfigDTO;
 import com.Projeto.GeradorDeQuestoes.entities.DocumentosReferenciaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.PdfBinarioEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
+import com.Projeto.GeradorDeQuestoes.services.CarteiraService;
+import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 import com.Projeto.GeradorDeQuestoes.services.DocumentosReferenciaService;
 import com.Projeto.GeradorDeQuestoes.services.GerenciamentoService;
 import com.Projeto.GeradorDeQuestoes.services.PdfBinarioService;
@@ -39,17 +43,21 @@ public class GerenciamentoController {
     private final PdfBinarioService pdfBinarioService;
     private final DocumentosReferenciaService documentosReferenciaService;
     private final VectorIngestionService ingestionService;
+    private final CarteiraService carteiraService;
 
 
     public GerenciamentoController(GerenciamentoService gerenciamentoService, 
         PdfBinarioService pdfBinarioService, 
         DocumentosReferenciaService documentosReferenciaService, 
-        VectorIngestionService ingestionService
+        VectorIngestionService ingestionService, 
+        CarteiraService carteiraService, 
+        CobrancaLlmService cobrancaLlmService
         ) {
         this.gerenciamentoService = gerenciamentoService;
         this.pdfBinarioService = pdfBinarioService;
         this.documentosReferenciaService = documentosReferenciaService;
         this.ingestionService = ingestionService;
+        this.carteiraService = carteiraService;
     }
 
     @PostMapping("/listar")
@@ -110,7 +118,8 @@ public class GerenciamentoController {
     public ResponseEntity<Map<String, Object>> upload(
             @RequestParam("file") MultipartFile file,
             @RequestParam("titulo") String titulo,
-            @RequestParam("disciplinaId") String disciplinaId) { 
+            @RequestParam("disciplinaId") String disciplinaId,
+        @AuthenticationPrincipal UsuarioEntity usuario) { 
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("erro", "Arquivo vazio"));
@@ -137,7 +146,7 @@ public class GerenciamentoController {
             metadata.put("documento_id", docReferencia.getId().toString()); 
             metadata.put("disciplina_id", disciplinaId); 
 
-            ResultadoIngestaoDTO chunks = ingestionService.ingerirPdf(bytes, filename, metadata);
+            ResultadoIngestaoDTO chunks = ingestionService.ingerirPdf(bytes, filename, metadata, usuario);
 
             return ResponseEntity.ok(Map.of(
                 "mensagem", "PDF indexado e vinculado com sucesso",

@@ -1,15 +1,30 @@
-<nav aria-label="breadcrumb" class="modern-breadcrumb mb-3" *ngIf="breadcrumbs.length > 0">
-  <ol class="breadcrumb-list">
-    <li class="breadcrumb-item" *ngFor="let breadcrumb of breadcrumbs; let last = last" [class.active]="last">
-      
-      <a *ngIf="!last; else lastItem" [routerLink]="breadcrumb.url">{{ breadcrumb.label }}</a>
-      
-      <ng-template #lastItem>
-        <span class="current-page">{{ breadcrumb.label }}</span>
-      </ng-template>
-      
-      <span class="breadcrumb-separator" *ngIf="!last" aria-hidden="true">/</span>
-      
-    </li>
-  </ol>
-</nav>
+<div class="breadcrumb-header-container">
+  
+  <nav aria-label="breadcrumb" class="modern-breadcrumb" *ngIf="breadcrumbs.length > 0">
+    <ol class="breadcrumb-list">
+      <li class="breadcrumb-item" *ngFor="let breadcrumb of breadcrumbs; let last = last" [class.active]="last">
+        
+        <a *ngIf="!last; else lastItem" [routerLink]="breadcrumb.url">{{ breadcrumb.label }}</a>
+        
+        <ng-template #lastItem>
+          <span class="current-page">{{ breadcrumb.label }}</span>
+        </ng-template>
+        
+        <span class="breadcrumb-separator" *ngIf="!last" aria-hidden="true">/</span>
+        
+      </li>
+    </ol>
+  </nav>
+
+  <div *ngIf="breadcrumbs.length === 0"></div>
+
+  <div class="wallet-container">
+    <span class="wallet-label">Créditos IA:</span>
+    <span class="wallet-badge" 
+          [ngClass]="saldoAtual > 0.5 ? 'status-success' : 'status-danger'"
+          title="Saldo atual da carteira">
+      <i class="cil-wallet"></i> R$ {{ saldoAtual | number:'1.2-2' }}
+    </span>
+  </div>
+
+</div>

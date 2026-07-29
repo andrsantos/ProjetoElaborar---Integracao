@@ -1,3 +1,10 @@
+.breadcrumb-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
 .modern-breadcrumb {
   font-size: 0.875rem;
   color: #6c757d;
@@ -15,7 +22,7 @@
       align-items: center;
 
       a {
-        color: #4f46e5; // Tom de azul/roxo moderno (combina com o menu)
+        color: #4f46e5;
         text-decoration: none;
         transition: color 0.2s ease;
 
@@ -39,6 +46,41 @@
 
     .current-page {
       color: #374151;
+    }
+  }
+}
+
+.wallet-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; 
+  .wallet-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 600;
+  }
+
+  .wallet-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem; 
+    padding: 0.35rem 0.85rem;
+    border-radius: 50px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); 
+    transition: all 0.2s ease;
+
+    &.status-success {
+      background-color: #d1fae5; 
+      color: #065f46; 
+      border: 1px solid #34d399;
+    }
+
+    &.status-danger {
+      background-color: #fee2e2; 
+      color: #991b1b; 
+      border: 1px solid #f87171;
     }
   }
 }

@@ -2,7 +2,10 @@ package com.Projeto.GeradorDeQuestoes.controllers;
 
 import com.Projeto.GeradorDeQuestoes.dto.GerarQuestaoRequest;
 import com.Projeto.GeradorDeQuestoes.dto.ListaQuestoes;
-import com.Projeto.GeradorDeQuestoes.services.GeradorQuestaoService; 
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
+import com.Projeto.GeradorDeQuestoes.services.GeradorQuestaoService;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,9 +22,9 @@ public class GeradorQuestoesController {
     }
 
     @PostMapping("/gerar")
-    public ListaQuestoes gerarQuestao(@RequestBody GerarQuestaoRequest request) {
+    public ListaQuestoes gerarQuestao(@RequestBody GerarQuestaoRequest request, @AuthenticationPrincipal UsuarioEntity usuario) {
 
-        return this.geradorQuestaoService.gerarQuestoes(request);
+        return this.geradorQuestaoService.gerarQuestoes(request, usuario);
 
     }
 }

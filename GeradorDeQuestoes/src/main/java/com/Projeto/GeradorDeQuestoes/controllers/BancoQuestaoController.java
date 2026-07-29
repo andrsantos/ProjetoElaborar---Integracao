@@ -6,6 +6,7 @@ import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
 import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
 import com.Projeto.GeradorDeQuestoes.entities.PdfQuestaoEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.enums.TipoQuestao;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
@@ -27,6 +28,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -105,7 +107,8 @@ public class BancoQuestaoController {
     }
     
     @PostMapping("/cadastrar")
-    public ResponseEntity<?> cadastrarQuestao(@RequestBody QuestaoComOrigemDTO dto) {
+    public ResponseEntity<?> cadastrarQuestao(@RequestBody QuestaoComOrigemDTO dto, 
+    @AuthenticationPrincipal UsuarioEntity usuario) {
 
     System.out.println("=== DTO RECEBIDO ===");
     System.out.println("tipo: [" + dto.getTipo() + "]");
@@ -152,7 +155,8 @@ public class BancoQuestaoController {
         String conceitoNormalizado = bancoService.normalizarConceito(
             dto.getEnunciado(),
             conceitoOriginal,
-            conceitosExistentes
+            conceitosExistentes,
+            usuario
         );
         
         questao.setConceito(conceitoNormalizado);
@@ -188,7 +192,9 @@ public class BancoQuestaoController {
 
     @PostMapping("/cadastrar-lote")
     @Transactional 
-    public ResponseEntity<?> cadastrarLoteDeQuestoes(@RequestBody LoteQuestoesDTO payload) {
+    public ResponseEntity<?> cadastrarLoteDeQuestoes(@RequestBody LoteQuestoesDTO payload,
+    @AuthenticationPrincipal UsuarioEntity usuario
+    ) {
         
         System.out.println("=== RECEBENDO LOTE DE QUESTÕES ===");
         System.out.println("Job ID associado: " + payload.getJobId());
@@ -260,7 +266,7 @@ public class BancoQuestaoController {
                     String conceitoOriginal = dto.getConceito();
                     List<String> conceitosExistentes = conceitoService.listarConceitosPorDisciplina(dto.getDisciplinaId());
                     String conceitoNormalizado = bancoService.normalizarConceito(
-                        dto.getEnunciado(), conceitoOriginal, conceitosExistentes
+                        dto.getEnunciado(), conceitoOriginal, conceitosExistentes, usuario
                     );
                     questao.setConceito(conceitoNormalizado);
                 } else {

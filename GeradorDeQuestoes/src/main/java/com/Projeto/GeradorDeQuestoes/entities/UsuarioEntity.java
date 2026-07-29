@@ -23,6 +23,9 @@ public class UsuarioEntity implements UserDetails {
     @Column(nullable = false)
     private String senha;
 
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    private CarteiraEntity carteira;
+
     public UsuarioEntity() {
     }
 
@@ -88,6 +91,14 @@ public class UsuarioEntity implements UserDetails {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public CarteiraEntity getCarteira() {
+        return carteira;
+    }
+
+    public void setCarteira(CarteiraEntity carteira) {
+        this.carteira = carteira;
     }
 
     @Override

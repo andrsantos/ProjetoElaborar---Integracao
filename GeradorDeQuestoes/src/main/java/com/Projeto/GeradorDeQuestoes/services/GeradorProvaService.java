@@ -9,6 +9,7 @@ import com.Projeto.GeradorDeQuestoes.dto.Questao;
 import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.ProvaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.QuestaoProvaEntity;
+import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.ProvaRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.TopicoConfigRepository;
@@ -70,13 +71,13 @@ public class GeradorProvaService {
     }
 
   
-    public Prova adicionarQuestoes(UUID idProva, GerarQuestaoRequest request) {
+    public Prova adicionarQuestoes(UUID idProva, GerarQuestaoRequest request, UsuarioEntity usuario) {
         Prova prova = getProva(idProva);
         if (prova == null) {
             throw new RuntimeException("Prova não encontrada!"); 
         }
 
-        ListaQuestoes novasQuestoes = questaoService.gerarQuestoes(request);
+        ListaQuestoes novasQuestoes = questaoService.gerarQuestoes(request, usuario);
 
         novasQuestoes.questoes().forEach(prova::adicionarQuestao);
 
@@ -136,7 +137,7 @@ public class GeradorProvaService {
         return pdfBytes;
     }
 
-   public Prova adicionarQuestoesAutomatico(UUID idProva, GeracaoAutomaticaRequest request) {
+   public Prova adicionarQuestoesAutomatico(UUID idProva, GeracaoAutomaticaRequest request, UsuarioEntity usuario) {
         
         Prova prova = getProva(idProva);
         if (prova == null) {
@@ -145,7 +146,7 @@ public class GeradorProvaService {
 
         GerarQuestaoRequest ragRequest = new GerarQuestaoRequest(request.getDocumentos());
         
-        ListaQuestoes novasQuestoes = questaoService.gerarQuestoes(ragRequest);
+        ListaQuestoes novasQuestoes = questaoService.gerarQuestoes(ragRequest, usuario);
 
         novasQuestoes.questoes().forEach(questao -> {
 
