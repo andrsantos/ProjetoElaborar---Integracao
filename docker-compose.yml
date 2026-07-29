@@ -1,16 +1,16 @@
 services:
   db-questoes:
     image: pgvector/pgvector:pg16
-    container_name: db-ia-educacional
+    container_name: db-ia-educacional-teste 
     restart: always
     environment:
       - POSTGRES_DB=ia_educacional
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=andreysantos12
     ports:
-      - "5435:5432"
+      - "5437:5432" 
     volumes:
-      - pgdata_questoes:/var/lib/postgresql/data
+      - pgdata_questoes_teste:/var/lib/postgresql/data 
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:                                         
       test: ["CMD-SHELL", "pg_isready -U postgres -d ia_educacional"]
@@ -21,15 +21,15 @@ services:
 
   api-questoes:
     build: ./GeradorDeQuestoes
-    container_name: api-ia-educacional
+    container_name: api-ia-educacional-teste 
     restart: always
     mem_limit: 1g
     ports:
-      - "8082:8080"
+      - "8083:8080" 
     env_file:
       - .env
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://187.77.240.149:5436/ia_educacional
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-questoes:5432/ia_educacional
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=andreysantos12
       - SPRING_AI_OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -42,12 +42,12 @@ services:
 
   web-questoes:
     build: ./gerador-de-questoes-ui
-    container_name: web-ia-educacional
+    container_name: web-ia-educacional-teste 
     restart: always
     ports:
-      - "82:80"
+      - "83:80" 
     depends_on:
       - api-questoes
 
 volumes:
-  pgdata_questoes:
+  pgdata_questoes_teste: 
