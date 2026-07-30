@@ -7,16 +7,17 @@ import { ProvaInfo } from '../../models/prova-info.model';
 import { ProvaSalva } from '../../models/prova-entity.model';
 import { TopicoQuantidade } from '../../models/topico-quantidade.model';
 import { Questao } from '../../models/questao.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ProvaService {
 
-  private readonly API_URL = 'http://187.77.240.149:8082/api/provas';
-  private readonly API_URL_SALVAS = 'http://187.77.240.149:8082/api/provas-salvas';
-  private readonly API_URL_TOPICOS = 'http://187.77.240.149:8082/api/topicos'; 
-  private readonly API_QUESTOES_GERAR = 'http://187.77.240.149:8082/api/questoes/gerar'; 
+  private readonly API_URL = '${environment.apiUrl}/api/provas';
+  private readonly API_URL_SALVAS = '${environment.apiUrl}/api/provas-salvas';
+  private readonly API_URL_TOPICOS = '${environment.apiUrl}/api/topicos'; 
+  private readonly API_QUESTOES_GERAR = '${environment.apiUrl}/api/questoes/gerar'; 
 
   constructor(private http: HttpClient) {}
 
@@ -109,11 +110,11 @@ export class ProvaService {
   }
 
   getConceitosPorDocumento(documentoId: string): Observable<string[]> {
-    return this.http.get<string[]>(`http://187.77.240.149:8082/api/documentos/${documentoId}/conceitos`);
+    return this.http.get<string[]>(`${environment.apiUrl}/api/documentos/${documentoId}/conceitos`);
   }
 
   gerarProvaExpressa(payload: any): Observable<any> {
-    return this.http.post<any>(`http://187.77.240.149:8082/api/provas/expressa`, payload);
+    return this.http.post<any>(`${environment.apiUrl}/api/provas/expressa`, payload);
   }
 
 

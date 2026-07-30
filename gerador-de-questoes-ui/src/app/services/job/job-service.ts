@@ -7,7 +7,7 @@ import { ExtracaoJob } from '../../models/extracao-job.model';
   providedIn: 'root',
 })
 export class JobService {
-  private apiUrl = 'http://187.77.240.149:8082/api/admin/jobs'; 
+  private apiUrl = '${environment.apiUrl}/api/admin/jobs'; 
   
   constructor(private http: HttpClient) {}
 

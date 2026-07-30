@@ -138,7 +138,7 @@ export const routes: Routes = [
     component: CadastroDocumento,
     title: 'Cadastro de Documento',
     canActivate: [AuthGuard, DisciplinaGuard],
-    data: { breadcrumb: 'Cadastrar Documento' }
+    data: { Nbreadcrumb: 'Cadastrar Documento' }
   },
   {
     path: 'detalhe-prompt',

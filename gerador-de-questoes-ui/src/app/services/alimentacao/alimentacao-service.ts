@@ -7,17 +7,17 @@ import { Observable } from 'rxjs';
 })
 export class AlimentacaoService {
 
-  private readonly API_URL = 'http://187.77.240.149:8082/api/alimentacao';
+  private readonly API_URL = '${environment.apiUrl}/api/alimentacao';
 
-  private readonly API_URL_2 = 'http://187.77.240.149:8082/api/admin/material/upload/questoes';
+  private readonly API_URL_2 = '${environment.apiUrl}/api/admin/material/upload/questoes';
 
-  private readonly API_URL_3 = 'http://187.77.240.149:8082/api/admin/material/upload';
+  private readonly API_URL_3 = '${environment.apiUrl}/api/admin/material/upload';
 
-  private readonly API_URL_4 = 'http://187.77.240.149:8082/api/documentacao';
+  private readonly API_URL_4 = '${environment.apiUrl}/api/documentacao';
 
-  private readonly API_URL_5 = 'http://187.77.240.149:8082/api/admin/jobs';
+  private readonly API_URL_5 = '${environment.apiUrl}/api/admin/jobs';
 
-  private readonly API_URL_6 = 'http://187.77.240.149:8082/api/gerenciamento';
+  private readonly API_URL_6 = '${environment.apiUrl}/api/gerenciamento';
 
 
 
@@ -58,7 +58,6 @@ export class AlimentacaoService {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('disciplinaId', disciplinaId);
-    
     formData.append('modoExtracao', modoExtracao);
     
     if (prompt && prompt.trim() !== '') {
