@@ -14,10 +14,10 @@ import { environment } from '../../../environments/environment';
 })
 export class ProvaService {
 
-  private readonly API_URL = '${environment.apiUrl}/api/provas';
-  private readonly API_URL_SALVAS = '${environment.apiUrl}/api/provas-salvas';
-  private readonly API_URL_TOPICOS = '${environment.apiUrl}/api/topicos'; 
-  private readonly API_QUESTOES_GERAR = '${environment.apiUrl}/api/questoes/gerar'; 
+  private readonly API_URL = `${environment.apiUrl}/api/provas`;
+  private readonly API_URL_SALVAS = `${environment.apiUrl}/api/provas-salvas`;
+  private readonly API_URL_TOPICOS = `${environment.apiUrl}/api/topicos`; 
+  private readonly API_QUESTOES_GERAR = `${environment.apiUrl}/api/questoes/gerar`; 
 
   constructor(private http: HttpClient) {}
 

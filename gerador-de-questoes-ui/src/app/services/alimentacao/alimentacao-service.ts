@@ -1,32 +1,26 @@
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment'; 
 
 @Injectable({
   providedIn: 'root',
 })
 export class AlimentacaoService {
 
-  private readonly API_URL = '${environment.apiUrl}/api/alimentacao';
+  private readonly API_URL = `${environment.apiUrl}/api/alimentacao`;
 
-  private readonly API_URL_2 = '${environment.apiUrl}/api/admin/material/upload/questoes';
+  private readonly API_URL_2 = `${environment.apiUrl}/api/admin/material/upload/questoes`;
 
-  private readonly API_URL_3 = '${environment.apiUrl}/api/admin/material/upload';
+  private readonly API_URL_3 = `${environment.apiUrl}/api/admin/material/upload`;
 
-  private readonly API_URL_4 = '${environment.apiUrl}/api/documentacao';
+  private readonly API_URL_4 = `${environment.apiUrl}/api/documentacao`;
 
-  private readonly API_URL_5 = '${environment.apiUrl}/api/admin/jobs';
+  private readonly API_URL_5 = `${environment.apiUrl}/api/admin/jobs`;
 
-  private readonly API_URL_6 = '${environment.apiUrl}/api/gerenciamento';
-
-
-
-
-
+  private readonly API_URL_6 = `${environment.apiUrl}/api/gerenciamento`;
 
   constructor(private http: HttpClient) { }
-
-
 
   uploadPdf(file: File, titulo: string, disciplinaId: string): Observable<HttpEvent<any>> {
     const formData: FormData = new FormData();
@@ -53,7 +47,6 @@ export class AlimentacaoService {
     });
   }
 
-
   uploadQuestoesAsync(file: File, disciplinaId: string, prompt: string, modoExtracao: string): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
@@ -70,6 +63,4 @@ export class AlimentacaoService {
   consultarStatusJob(jobId: string): Observable<any> {
     return this.http.get(`${this.API_URL_5}/${jobId}`);
   }
-  
 }
-

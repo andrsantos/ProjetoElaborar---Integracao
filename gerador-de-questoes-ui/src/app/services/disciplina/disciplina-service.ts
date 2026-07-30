@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { Disciplina } from '../../models/disciplina.model';
 import { Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DisciplinaService {
 
-  private apiUrl = '${environment.apiUrl}/api/disciplinas'; 
+  private apiUrl = `${environment.apiUrl}/api/disciplinas`; 
 
   constructor(private http: HttpClient) {}
 

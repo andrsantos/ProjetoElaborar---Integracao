@@ -1,13 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { QuestaoFormatoAvaliarDTO } from '../../models/questao-formato-avaliar.model';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class IntegracaoAvaliarService {
 
-  private API_URL = '${environment.apiUrl}/api/integracao/avaliar';
+  private API_URL = `${environment.apiUrl}/api/integracao/avaliar`;
 
   constructor(private http: HttpClient) {}
 

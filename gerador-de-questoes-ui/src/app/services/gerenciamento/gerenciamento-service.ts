@@ -13,10 +13,10 @@ import { environment } from '../../../environments/environment';
 })
 export class GerenciamentoService {
 
-  private readonly API_URL = '${environment.apiUrl}/api/gerenciamento';
-  private readonly API_URL_2 = '${environment.apiUrl}/api/gerenciamento/listar/documentos';
-  private readonly API_URL_3 = '${environment.apiUrl}/api/gerenciamento/listar/documentos/filtrados';
-  private readonly API_URL_4 = '${environment.apiUrl}/api/documentacao/download';
+  private readonly API_URL = `${environment.apiUrl}/api/gerenciamento`;
+  private readonly API_URL_2 = `${environment.apiUrl}/api/gerenciamento/listar/documentos`;
+  private readonly API_URL_3 = `${environment.apiUrl}/api/gerenciamento/listar/documentos/filtrados`;
+  private readonly API_URL_4 = `${environment.apiUrl}/api/documentacao/download`;
 
   constructor(private http: HttpClient) {}
   
