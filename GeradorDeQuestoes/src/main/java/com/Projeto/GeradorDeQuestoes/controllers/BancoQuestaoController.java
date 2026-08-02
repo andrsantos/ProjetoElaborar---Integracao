@@ -14,6 +14,7 @@ import com.Projeto.GeradorDeQuestoes.repositories.ExtracaoJobRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.PdfQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.ConceitoService;
+import com.Projeto.GeradorDeQuestoes.services.PdfQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.VectorIngestionService;
 
 import java.io.IOException;
@@ -45,6 +46,7 @@ public class BancoQuestaoController {
     private final VectorIngestionService vetorizacaoService;
     private final ConceitoService conceitoService;
     private final ExtracaoJobRepository jobRepository;
+    private final PdfQuestaoService pdfQuestaoService;
 
 
     public BancoQuestaoController(BancoQuestaoRepository repository, 
@@ -52,13 +54,15 @@ public class BancoQuestaoController {
         VectorIngestionService vetorizacaoService, 
         ConceitoService conceitoService, 
         BancoQuestaoService bancoService, 
-        ExtracaoJobRepository jobRepository) {
+        ExtracaoJobRepository jobRepository, 
+        PdfQuestaoService pdfQuestaoService) {
         this.repository = repository;
         this.bancoService = bancoService;
         this.pdfQuestaoRepository = pdfQuestaoRepository;
         this.vetorizacaoService = vetorizacaoService;
         this.conceitoService = conceitoService;
         this.jobRepository = jobRepository;
+        this.pdfQuestaoService = pdfQuestaoService;
     }
 
     @PostMapping
@@ -208,11 +212,10 @@ public class BancoQuestaoController {
 
                     ExtracaoJobEntity job = jobRepository.findById(payload.getJobId())
                         .orElseThrow(() -> new RuntimeException("Job não encontrado para o ID: " + payload.getJobId())); 
-                System.out.println("Job foi encontrado!" + job.getCaminhoArquivoTemporario());
+
                 if (job != null && job.getCaminhoArquivoTemporario() != null) {
                     
                     Path caminhoTemp = Paths.get(job.getCaminhoArquivoTemporario());
-                    System.out.println("O arquivo foi realmente criado? " + Files.exists(caminhoTemp));
 
                     if (Files.exists(caminhoTemp)) {
                         PdfQuestaoEntity novoPdf = new PdfQuestaoEntity();
@@ -359,6 +362,24 @@ public class BancoQuestaoController {
     public ResponseEntity<List<String>> listarConceitosDaDisciplina(@PathVariable String disciplinaId) {
         List<String> conceitos = bancoService.listarConceitosPorDisciplina(disciplinaId);
         return ResponseEntity.ok(conceitos);
+    }
+
+    @GetMapping("/listar-provas/{provaId}/questoes")
+    public ResponseEntity<?> listarQuestoesDaProva(@PathVariable UUID provaId) {
+        System.out.println("Buscando questões vinculadas à prova ID: " + provaId);
+        
+        try {
+            List<BancoQuestaoEntity> questoes = pdfQuestaoService.buscarQuestoesPorProvaId(provaId);
+            
+            if (questoes.isEmpty()) {
+                return ResponseEntity.noContent().build(); 
+            }
+            
+            return ResponseEntity.ok(questoes);
+        } catch (Exception e) {
+            System.err.println("Erro ao buscar questões da prova: " + e.getMessage());
+            return ResponseEntity.internalServerError().body("Erro ao buscar as questões: " + e.getMessage());
+        }
     }
 
 

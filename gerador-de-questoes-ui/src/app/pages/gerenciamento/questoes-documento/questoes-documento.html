@@ -1,0 +1,142 @@
+<div class="questoes-container">
+  
+  <div class="header">
+    <button class="btn-voltar" (click)="voltar()">
+      <i class="fas fa-arrow-left"></i> Voltar
+    </button>
+    <div class="titles">
+      <h2>Auditoria de Questões</h2>
+      <p>Visualizando o resultado da extração da prova selecionada.</p>
+    </div>
+    <div class="stats" *ngIf="!isLoading">
+      <span class="badge">{{ questoes.length }} questões extraídas</span>
+    </div>
+  </div>
+
+  <div class="loading-state" *ngIf="isLoading">
+    <span class="loader"></span>
+    <p>Carregando base de questões...</p>
+  </div>
+
+  <div class="empty-state" *ngIf="!isLoading && questoes.length === 0">
+    <i class="fas fa-search"></i>
+    <h3>Nenhuma questão encontrada</h3>
+    <p>A extração desta prova pode ter falhado ou as questões foram removidas.</p>
+  </div>
+
+
+
+  <div class="questoes-list" *ngIf="!isLoading && questoes.length > 0">
+
+    <div class="questao-card" *ngFor="let questao of questoesPaginadas; let i = index">
+      <div class="questao-header">
+        <div class="info-grupo">
+          <span class="questao-numero">Questão {{ (paginaAtual - 1) * itensPorPagina + i + 1 }}</span>
+          <span class="questao-tag gabarito">
+            <strong>Gabarito:</strong>
+            <span *ngIf="!questao['isEditing']">{{ questao.respostaCorreta | uppercase }}</span>
+            <input *ngIf="questao['isEditing']" 
+                   type="text" 
+                   [(ngModel)]="questao.respostaCorreta" 
+                   class="inline-input gabarito-input" 
+                   maxlength="1"
+                   title="Digite a letra da resposta correta">
+          </span>
+
+          <span class="questao-tag" *ngIf="questao.topico">
+            <i class="fas fa-tag"></i> {{ questao.topico }}
+          </span>
+          <span class="questao-tag nivel" *ngIf="questao.nivel">
+            {{ questao.nivel }}
+          </span>
+        </div>
+        
+        <div class="acoes-grupo">
+          <ng-container *ngIf="!questao['isEditing']">
+            <button class="btn-acao btn-edit" (click)="habilitarEdicao(questao)" title="Editar Questão">
+              <i class="fas fa-pen"></i>
+            </button>
+            <button class="btn-acao btn-delete" (click)="excluirQuestao(questao)" title="Excluir Questão">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </ng-container>
+
+          <ng-container *ngIf="questao['isEditing']">
+            <button class="btn-acao btn-save" (click)="salvarEdicao(questao)" title="Salvar Alterações">
+              <i class="fas fa-check"></i>
+            </button>
+            <button class="btn-acao btn-cancel" (click)="cancelarEdicao(questao)" title="Cancelar Edição">
+              <i class="fas fa-times"></i>
+            </button>
+          </ng-container>
+        </div>
+      </div>
+      
+      <div class="questao-enunciado">
+        <p *ngIf="!questao['isEditing']">{{ questao.enunciado }}</p>
+        <textarea *ngIf="questao['isEditing']" 
+                  [(ngModel)]="questao.enunciado" 
+                  class="inline-input text-area" 
+                  rows="4"></textarea>
+      </div>
+
+      <div class="questao-alternativas" *ngIf="questao.alternativas">
+        <div class="alternativa" 
+             *ngFor="let alt of questao.alternativas | keyvalue"
+             [ngClass]="{'correta': (questao.respostaCorreta | uppercase) === (alt.key | uppercase)}">
+          
+          <span class="letra">
+            <input type="radio" 
+                   *ngIf="questao['isEditing']" 
+                   [(ngModel)]="questao.respostaCorreta" 
+                   [value]="alt.key" 
+                   name="resposta-{{i}}">
+            {{ alt.key | uppercase }})
+          </span>
+          
+          <span class="texto" *ngIf="!questao['isEditing']">{{ alt.value }}</span>
+          <input type="text" 
+                 *ngIf="questao['isEditing']" 
+                 [(ngModel)]="questao.alternativas[alt.key]" 
+                 class="inline-input">
+          
+          <i class="fas fa-check icon-correta" *ngIf="(questao.respostaCorreta | uppercase) === (alt.key | uppercase) && !questao['isEditing']"></i>
+        </div>
+      </div>
+
+      <div class="questao-footer" *ngIf="questao.comentarioTecnico || questao['isEditing']">
+        <button class="btn-comentario" *ngIf="!questao['isEditing'] && questao.comentarioTecnico" (click)="questao['mostrarComentario'] = !questao['mostrarComentario']">
+          <i class="fas fa-comment-dots"></i> 
+          {{ questao['mostrarComentario'] ? 'Ocultar Comentário' : 'Ver Comentário da IA' }}
+        </button>
+        
+        <div class="comentario-box" *ngIf="questao['mostrarComentario'] && !questao['isEditing']">
+          <strong>Justificativa Técnica:</strong><br>
+          {{ questao.comentarioTecnico }}
+        </div>
+
+        <div class="comentario-box" *ngIf="questao['isEditing']">
+          <strong>Justificativa Técnica:</strong><br>
+          <textarea [(ngModel)]="questao.comentarioTecnico" class="inline-input text-area" rows="3" placeholder="Insira a justificativa técnica..."></textarea>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- Controles de Paginação -->
+  <div class="paginacao-container" *ngIf="!isLoading && questoes.length > itensPorPagina">
+    <button class="btn-pagina" [disabled]="paginaAtual === 1" (click)="mudarPagina(false)">
+      <i class="fas fa-chevron-left"></i> Anterior
+    </button>
+    <span class="pagina-info">
+      Página <strong>{{ paginaAtual }}</strong> de <strong>{{ totalPaginas }}</strong>
+    </span>
+    <button class="btn-pagina" [disabled]="paginaAtual === totalPaginas" (click)="mudarPagina(true)">
+      Próxima <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
+</div>

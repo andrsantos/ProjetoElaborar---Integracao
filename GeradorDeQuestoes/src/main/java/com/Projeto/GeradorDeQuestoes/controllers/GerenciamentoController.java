@@ -3,7 +3,10 @@ package com.Projeto.GeradorDeQuestoes.controllers;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -24,12 +27,14 @@ import com.Projeto.GeradorDeQuestoes.dto.ResultadoIngestaoDTO;
 import com.Projeto.GeradorDeQuestoes.dto.TopicoConfigDTO;
 import com.Projeto.GeradorDeQuestoes.entities.DocumentosReferenciaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.PdfBinarioEntity;
+import com.Projeto.GeradorDeQuestoes.entities.PdfQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.services.CarteiraService;
 import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 import com.Projeto.GeradorDeQuestoes.services.DocumentosReferenciaService;
 import com.Projeto.GeradorDeQuestoes.services.GerenciamentoService;
 import com.Projeto.GeradorDeQuestoes.services.PdfBinarioService;
+import com.Projeto.GeradorDeQuestoes.services.PdfQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.VectorIngestionService;
 
 
@@ -44,6 +49,7 @@ public class GerenciamentoController {
     private final DocumentosReferenciaService documentosReferenciaService;
     private final VectorIngestionService ingestionService;
     private final CarteiraService carteiraService;
+    private final PdfQuestaoService pdfQuestaoService;
 
 
     public GerenciamentoController(GerenciamentoService gerenciamentoService, 
@@ -51,14 +57,40 @@ public class GerenciamentoController {
         DocumentosReferenciaService documentosReferenciaService, 
         VectorIngestionService ingestionService, 
         CarteiraService carteiraService, 
-        CobrancaLlmService cobrancaLlmService
+        CobrancaLlmService cobrancaLlmService, 
+        PdfQuestaoService pdfQuestaoService
         ) {
         this.gerenciamentoService = gerenciamentoService;
         this.pdfBinarioService = pdfBinarioService;
         this.documentosReferenciaService = documentosReferenciaService;
         this.ingestionService = ingestionService;
         this.carteiraService = carteiraService;
+        this.pdfQuestaoService = pdfQuestaoService;
     }
+
+    @GetMapping("/listar/provas")
+    public ResponseEntity<?> listarProvasResumo() {
+        System.out.println("Buscando resumo de todas as provas cadastradas...");
+        return ResponseEntity.ok(pdfQuestaoService.buscarTodosResumos());
+    }
+
+    @GetMapping("/download-prova/{id}")
+    public ResponseEntity<byte[]> baixarProva(@PathVariable UUID id) {
+        PdfQuestaoEntity prova = pdfQuestaoService.buscarPorId(id); 
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + prova.getNomeOriginal() + "\"")
+                .contentType(MediaType.parseMediaType(prova.getContentType() != null ? prova.getContentType() : "application/pdf"))
+                .body(prova.getConteudo());
+    }
+
+    @DeleteMapping("/deletar-prova/{id}")
+    public ResponseEntity<Void> deletarProva(@PathVariable UUID id) {
+        pdfQuestaoService.deletarPorId(id); 
+        return ResponseEntity.noContent().build();
+    }
+
+
 
     @PostMapping("/listar")
     public List<?> listarGerenciamento(@RequestBody FiltroGerenciamentoDTO filtro) {

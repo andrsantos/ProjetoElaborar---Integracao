@@ -3,6 +3,7 @@ package com.Projeto.GeradorDeQuestoes.entities;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.enums.TipoQuestao;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -56,6 +57,7 @@ public class BancoQuestaoEntity {
     @Column(name = "origem", columnDefinition = "TEXT")
     private String origem;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "arquivo_id")
     private PdfQuestaoEntity arquivoOrigem;

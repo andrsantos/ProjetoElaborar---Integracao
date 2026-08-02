@@ -21,6 +21,7 @@ import { GeracaoRapida } from './pages/gerador-prova/geracao-rapida/geracao-rapi
 import { MenuGeracao } from './pages/gerador-prova/menu-geracao/menu-geracao';
 import { Login } from './pages/login/login';
 import { AuthGuard } from './guards/auth/auth-guard';
+import { QuestoesDocumento } from './pages/gerenciamento/questoes-documento/questoes-documento';
 
 export const routes: Routes = [
   {
@@ -160,5 +161,12 @@ export const routes: Routes = [
     title: 'Gerenciamento - RAG',
     canActivate: [AuthGuard, DisciplinaGuard],
     data: { breadcrumb: 'Gerenciamento RAG' }
+   },
+   { 
+    path: 'gerenciamento/prova/:id/questoes', 
+    component: QuestoesDocumento,
+    title: 'Auditoria de Questões - RAG',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Auditoria de Questões' }
    }
 ];

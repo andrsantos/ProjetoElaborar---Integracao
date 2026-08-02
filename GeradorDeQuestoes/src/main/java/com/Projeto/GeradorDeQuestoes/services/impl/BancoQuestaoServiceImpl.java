@@ -355,4 +355,6 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
     public List<String> listarConceitosPorDisciplina(String disciplinaId) {
         return bancoQuestaoRepository.findConceitosDistintosPorDisciplina(disciplinaId);
     }
+
+    
 }

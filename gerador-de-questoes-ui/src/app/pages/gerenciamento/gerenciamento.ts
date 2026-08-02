@@ -8,6 +8,8 @@ import { ExtracaoJob } from '../../models/extracao-job.model';
 import { JobService } from '../../services/job/job-service';
 import { DisciplinaContextService } from '../../services/disciplina-context/disciplina-context-service';
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
+import { PdfquestaoService } from '../../services/pdf-questao/pdfquestao-service';
+import { PdfQuestaoResumo } from '../../models/pdfquestao-resumo.model';
 
 @Component({
   selector: 'app-gerenciamento',
@@ -17,6 +19,8 @@ import { DisciplinaService } from '../../services/disciplina/disciplina-service'
   standalone: true
 })
 export class Gerenciamento implements OnInit {
+
+  public listaProvas: PdfQuestaoResumo[] = [];
   
   public managementForm!: FormGroup;
   public searchPerformed = false;
@@ -42,6 +46,7 @@ export class Gerenciamento implements OnInit {
     private toastr: ToastrService,
     private contextService: DisciplinaContextService,
     private disciplinaService: DisciplinaService,
+    private pdfQuestaoService: PdfquestaoService,
     @Inject(PLATFORM_ID) private platformId: Object
 
   ) { }
@@ -88,8 +93,12 @@ export class Gerenciamento implements OnInit {
       this.buscarDocumentosBaseConhecimento();
     } else if (tableType === 'processamentos') {
       this.buscarHistoricoProcessamentos();
+    } else if (tableType === 'provas') {
+      this.buscarProvasBaseConhecimento(); 
     }
   }
+
+
 
   onFiltroChange(): void {
     this.paginaAtual = 1;
@@ -210,6 +219,7 @@ export class Gerenciamento implements OnInit {
   }
 
   // --- PAGINAÇÃO GERAL ---
+
   get totalPaginas(): number {
     const tipoAtivo = this.managementForm.get('tableType')?.value;
     let totalRegistros = 0;
@@ -218,6 +228,8 @@ export class Gerenciamento implements OnInit {
       totalRegistros = this.listaMateriaisFiltrada.length;
     } else if (tipoAtivo === 'processamentos') {
       totalRegistros = this.listaJobsFiltrada.length;
+    } else if (tipoAtivo === 'provas') {
+      totalRegistros = this.listaProvasFiltrada.length;
     }
       
     return Math.ceil(totalRegistros / this.itensPorPagina) || 1;
@@ -230,4 +242,81 @@ export class Gerenciamento implements OnInit {
       this.paginaAtual--;
     }
   }
+
+  buscarProvasBaseConhecimento(): void {
+    this.pdfQuestaoService.listarProvas().subscribe({
+      next: (provas) => {
+        this.listaProvas = provas;
+      },
+      error: (error) => {
+        console.error('Erro ao buscar provas:', error);
+        this.toastr.error('Erro ao carregar a lista de provas.', 'Erro');
+        this.isSearching = false;
+      },
+      complete: () => {
+        this.isSearching = false;
+      }
+    });
+  }
+
+  get listaProvasFiltrada(): PdfQuestaoResumo[] {
+    const busca = this.filtroTermo.toLowerCase();
+    return this.listaProvas.filter(prova => 
+      prova.nomeOriginal && prova.nomeOriginal.toLowerCase().includes(busca)
+    );
+  }
+
+  get listaProvasPaginada(): PdfQuestaoResumo[] {
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+    return this.listaProvasFiltrada.slice(inicio, fim);
+  }
+
+  baixarProva(id: string, nomeArquivo: string): void {
+    this.pdfQuestaoService.baixarProva(id).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const linkHTML = document.createElement('a');
+        linkHTML.href = url;
+        linkHTML.download = nomeArquivo || 'prova.pdf';
+        document.body.appendChild(linkHTML);
+        linkHTML.click();
+        document.body.removeChild(linkHTML);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Erro ao baixar prova:', error);
+        this.toastr.error('Não foi possível baixar o arquivo da prova.', 'Erro');
+      }
+    });
+  }
+
+  excluirProva(prova: PdfQuestaoResumo): void {
+    const confirmacao = window.confirm(
+      `⚠️ ATENÇÃO: Tem certeza que deseja excluir a prova "${prova.nomeOriginal}"?\n\nIsso apagará permanentemente as ${prova.quantidadeQuestoes} questões extraídas a partir dela. Esta ação é IRREVERSÍVEL.`
+    );
+
+    if (confirmacao) {
+      this.pdfQuestaoService.excluirProva(prova.id).subscribe({
+        next: () => {
+          this.listaProvas = this.listaProvas.filter(p => p.id !== prova.id);
+          
+          if (this.listaProvasPaginada.length === 0 && this.paginaAtual > 1) {
+            this.paginaAtual--;
+          }
+          this.toastr.success(`Prova e questões excluídas com sucesso!`, 'Exclusão Concluída');
+        },
+        error: (error) => {
+          console.error('Erro ao excluir prova:', error);
+          this.toastr.error('Ocorreu um erro ao tentar excluir a prova e suas questões.', 'Erro');
+        }
+      });
+    }
+  }
+
+  verQuestoesDaProva(provaId: string): void {
+    this.router.navigate(['/gerenciamento/prova', provaId, 'questoes']);
+  }
+
+  
 }

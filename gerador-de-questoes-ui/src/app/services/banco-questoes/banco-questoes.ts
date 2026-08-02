@@ -56,6 +56,10 @@ export class BancoQuestoesService {
     return this.http.get<string[]>(url);
   }
 
+  listarQuestoesDaProva(provaId: string): Observable<BancoQuestao[]> {
+    console.log("Buscando questões para a prova ID:", provaId);
+    return this.http.get<BancoQuestao[]>(`${this.API_URL}/listar-provas/${provaId}/questoes`);
+  }
 
 }
   

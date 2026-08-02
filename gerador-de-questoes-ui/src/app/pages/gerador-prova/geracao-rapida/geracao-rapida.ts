@@ -16,7 +16,7 @@ import { BancoQuestoesService } from '../../../services/banco-questoes/banco-que
 })
 export class GeracaoRapida implements OnInit {
 
-  public opcoesQuantidade = [5, 10, 15, 20];
+  public opcoesQuantidade = [10, 15, 20, 25, 30];
   public opcoesNivel = [
     { label: 'Iniciante', valor: 'UNIVERSITARIO_INICIANTE' },
     { label: 'Intermediário', valor: 'UNIVERSITARIO_INTERMEDIARIO' },

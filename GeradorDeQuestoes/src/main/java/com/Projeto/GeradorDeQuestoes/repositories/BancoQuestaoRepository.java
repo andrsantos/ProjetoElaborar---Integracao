@@ -51,8 +51,7 @@ List<BancoQuestaoEntity> buscarCatalogoParaSubstituicao(
         @Param("idsExcluidos") List<UUID> idsExcluidos
 );
 
-
-
+List<BancoQuestaoEntity> findByArquivoOrigemId(UUID arquivoOrigemId);
 
 
 }

@@ -1,13 +1,18 @@
 package com.Projeto.GeradorDeQuestoes.entities;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -30,6 +35,10 @@ public class PdfQuestaoEntity {
     private String contentType;
     private Long tamanhoBytes;
     private LocalDateTime dataUpload;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "arquivoOrigem", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<BancoQuestaoEntity> questoesExtraidas;
     
 
     @jakarta.persistence.PrePersist
@@ -93,6 +102,16 @@ public class PdfQuestaoEntity {
     public void setDataUpload(LocalDateTime dataUpload) {
         this.dataUpload = dataUpload;
     }
+
+
+    public List<BancoQuestaoEntity> getQuestoesExtraidas() {
+        return this.questoesExtraidas;
+    }
+
+    public void setQuestoesExtraidas(List<BancoQuestaoEntity> questoesExtraidas) {
+        this.questoesExtraidas = questoesExtraidas;
+    }
+
 
 
 

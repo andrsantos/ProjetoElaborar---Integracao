@@ -38,5 +38,9 @@ export interface BancoQuestao {
   arquivoOrigem?: string;
 
   disciplinaId?: string;
+
+  mostrarComentario?: boolean;
+
+  isEditing?: boolean;
   
 }
