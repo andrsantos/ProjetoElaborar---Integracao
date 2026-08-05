@@ -21,7 +21,7 @@ services:
 
   api-questoes:
     build: ./GeradorDeQuestoes
-    container_name: api-ia-educacional-teste 
+    container_name: api-ia-educacional
     restart: always
     mem_limit: 1g
     ports:
