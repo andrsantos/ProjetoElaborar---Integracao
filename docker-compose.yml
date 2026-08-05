@@ -25,7 +25,7 @@ services:
     restart: always
     mem_limit: 1g
     ports:
-      - "8083:8080" 
+      - "8082:8080" 
     env_file:
       - .env
     environment:
@@ -42,10 +42,10 @@ services:
 
   web-questoes:
     build: ./gerador-de-questoes-ui
-    container_name: web-ia-educacional-teste 
+    container_name: web-ia-educacional
     restart: always
     ports:
-      - "83:80" 
+      - "82:80" 
     depends_on:
       - api-questoes
 
