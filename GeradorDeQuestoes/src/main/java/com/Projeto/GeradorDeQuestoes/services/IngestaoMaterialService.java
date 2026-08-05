@@ -21,6 +21,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -29,11 +30,13 @@ import org.springframework.stereotype.Service;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
 import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
+import com.Projeto.GeradorDeQuestoes.repositories.VectorStoreRepository;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
+
 
 @Service
 public class IngestaoMaterialService {
@@ -45,12 +48,15 @@ public class IngestaoMaterialService {
     private final ExtracaoJobService jobService;
     private final CobrancaLlmService cobrancaLlmService;
     private final CarteiraService carteiraService;
+    private final VectorStoreRepository vectorStoreRepository;
 
     public IngestaoMaterialService(VectorStore vectorStore, 
        @Qualifier("anthropicChatClient") ChatClient anthropicChatClient,
        @Qualifier("openAiChatClient") ChatClient openAiChatClient,
        ExtracaoJobService jobService,
-       CobrancaLlmService cobrancaLlmService, CarteiraService carteiraService) {
+       CobrancaLlmService cobrancaLlmService, 
+       CarteiraService carteiraService, 
+       VectorStoreRepository vectorStoreRepository) {
         
         this.vectorStore = vectorStore;
         this.anthropicChatClient = anthropicChatClient;
@@ -60,6 +66,7 @@ public class IngestaoMaterialService {
         this.objectMapper = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.carteiraService = carteiraService;
+        this.vectorStoreRepository = vectorStoreRepository;
     }
 
     public void importarCapituloLivroDificil(Resource pdfResource, String topico, String fonte) {
@@ -100,7 +107,7 @@ public class IngestaoMaterialService {
     }
 
     public List<QuestaoDTO> processarPdfParaQuestoes(File pdfFile, String promptPersonalizado, String modoExtracao, 
-                                                     UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
+                                                     UsuarioEntity usuario, AtomicBoolean saldoEsgotado, String disciplinaId) {
         
         List<String> jsonsBrutos = extrairTextoDePdf(pdfFile, usuario, saldoEsgotado);
         System.out.println("JSONs brutos extraídos: " + jsonsBrutos.size() + " blocos processados.");
@@ -128,7 +135,8 @@ public class IngestaoMaterialService {
             return questoesExtraidas; 
         }
 
-        List<QuestaoDTO> questoesRevisadas = chamarAgenteRevisor(questoesExtraidas, promptPersonalizado, modoExtracao, usuario, saldoEsgotado);
+
+        List<QuestaoDTO> questoesRevisadas = chamarAgenteRevisor(questoesExtraidas, promptPersonalizado, modoExtracao, usuario, saldoEsgotado, disciplinaId);
         embaralharLoteDeQuestoes(questoesRevisadas);
         System.out.println("Saldo atual após operação:" + carteiraService.consultarSaldoAtual(usuario));
         return questoesRevisadas;
@@ -139,7 +147,7 @@ public class IngestaoMaterialService {
     }
 
     public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao, 
-                                                UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
+                                                UsuarioEntity usuario, AtomicBoolean saldoEsgotado, String disciplinaId) {
         if (questoes == null || questoes.isEmpty()) return questoes;
 
         List<QuestaoDTO> todasRevisadas = new ArrayList<>();
@@ -188,8 +196,10 @@ public class IngestaoMaterialService {
                     String jsonGrafo = respostaAnalista.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
                     jsonGrafo = garantirFechamentoJson(jsonGrafo);
 
+
                     com.fasterxml.jackson.databind.JsonNode grafoArray = objectMapper.readTree(jsonGrafo);
                     StringBuilder instrucoesCriadorPorQuestao = new StringBuilder();
+                    StringBuilder contextoTeoricoLote = new StringBuilder();
 
                     List<String> formatos = java.util.Arrays.asList(
                         "Estudo de Caso / Cenário Prático (Mundo Real)",
@@ -213,6 +223,29 @@ public class IngestaoMaterialService {
                         String idOriginal = node.path("idOriginal").asText();
                         String conceito = node.path("conceitoCentral").asText();
                         String competencia = node.path("competencia").asText();
+
+
+                        SearchRequest request = SearchRequest.builder()
+                        .query(conceito)
+                        .topK(4)
+                        .filterExpression("disciplina_id == '" + disciplinaId + "'")
+                        .build();
+
+                        List<Document> documentosEncontrados = this.vectorStore.similaritySearch(request);
+                        
+                        if (documentosEncontrados != null && !documentosEncontrados.isEmpty()) {
+                            contextoTeoricoLote.append("--- BASE TEÓRICA PARA O CONCEITO: ").append(conceito).append(" ---\n");
+                            
+                            List<String> chunksTextos = documentosEncontrados.stream()
+                                    .map(Document::getText)
+                                    .collect(Collectors.toList());
+                                    
+                            contextoTeoricoLote.append(String.join("\n[...]\n", chunksTextos)).append("\n\n");
+                            System.out.println("Sucesso: Contexto vetorial encontrado para '" + conceito + "'");
+                        } else {
+                            System.out.println("Aviso: Nenhum contexto encontrado na base para o conceito: " + conceito);
+                        }
+
                         
                         List<String> todasPropriedades = new ArrayList<>();
                         node.path("todasAsPropriedades").forEach(p -> todasPropriedades.add(p.asText()));
@@ -254,10 +287,9 @@ public class IngestaoMaterialService {
                         REGRAS MANDATÓRIAS:
                         1. NOVIDADE ESTRITA: A questão deve depender do conhecimento das 'Propriedades Obrigatórias' exigidas para ser resolvida.
                         2. DISTRATORES ANTI-VÍCIO: Cada alternativa incorreta deve representar um erro conceitual DIFERENTE e independente. Não crie alternativas que explorem o mesmo equívoco com palavras diferentes.
-                        
                         3. SIMETRIA VISUAL E VERBOSIDADE (CRÍTICO): Todas as 5 alternativas devem ter comprimentos de texto rigorosamente semelhantes. É ESTRITAMENTE PROIBIDO que a alternativa correta seja visivelmente mais longa, mais detalhada ou mais explicativa que as incorretas. Desenvolva os distratores com o mesmo nível de detalhamento, tom acadêmico e complexidade textual da resposta certa.
-                        
-                        4. ESTRUTURA DO JSON:
+                        4. CONSULTE A BASE TEÓRICA DO CONCEITO: Ao gerar as questões inéditas, sinta-se livre para o usar a base teórica, caso houver.
+                        5. ESTRUTURA DO JSON:
                         - No campo 'id', use o prefixo 'VAR1-' e 'VAR2-' seguido do ID fornecido no bloco de instrução.
                         - Preencha todos os campos: id, enunciado, alternativas (A a E), respostaCorreta, explicacao, conceito, competencia, comentarioTecnico, topico e nivel.
                         - O campo tópico DEVE SER o nome da disciplina mais adequada ao conceito.
@@ -272,7 +304,7 @@ public class IngestaoMaterialService {
                     }
 
                     String promptFinal = instrucaoCriador + 
-                                         "\n\n=== INSTRUÇÕES DE GERAÇÃO (CRIADOR CEGO) ===\n" + instrucoesCriadorPorQuestao.toString();
+                                         "\n\n=== INSTRUÇÕES DE GERAÇÃO (CRIADOR CEGO) ===\n" + instrucoesCriadorPorQuestao.toString() + contextoTeoricoLote.toString();
 
                     ChatResponse respostaCriador = this.anthropicChatClient.prompt(promptFinal)
                             .options(ChatOptions.builder().temperature(0.3).maxTokens(4000).build())
@@ -765,7 +797,7 @@ public class IngestaoMaterialService {
 
             AtomicBoolean saldoEsgotado = new AtomicBoolean(false);
 
-            List<QuestaoDTO> questoesExtraidas = processarPdfParaQuestoes(pdfFile, promptPersonalizado, modoExtracao, usuario, saldoEsgotado);
+            List<QuestaoDTO> questoesExtraidas = processarPdfParaQuestoes(pdfFile, promptPersonalizado, modoExtracao, usuario, saldoEsgotado, disciplinaId);
 
             if (questoesExtraidas != null && !questoesExtraidas.isEmpty()) {
                 questoesExtraidas = achatarListaDeQuestoes(questoesExtraidas);

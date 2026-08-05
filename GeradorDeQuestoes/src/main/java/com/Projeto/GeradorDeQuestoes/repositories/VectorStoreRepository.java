@@ -31,5 +31,18 @@ public interface VectorStoreRepository extends JpaRepository<VectorStoreEntity, 
                    "AND metadata->>'conceito' != ''", 
            nativeQuery = true)
     List<String> findDistinctConceitosByDisciplinaId(@Param("disciplinaId") String disciplinaId);
+
+    @Query(value = "SELECT content FROM vector_store " +
+                   "WHERE metadata->>'disciplina_id' = :disciplinaId", 
+           nativeQuery = true)
+    List<String> findAllChunksByDisciplinaId(@Param("disciplinaId") String disciplinaId);
+
+    @Query(value = "SELECT content FROM vector_store " +
+                   "WHERE metadata->>'disciplina_id' = :disciplinaId " +
+                   "AND metadata->>'conceito' = :conceito", 
+           nativeQuery = true)
+    List<String> findChunksByDisciplinaAndConceito(@Param("disciplinaId") String disciplinaId, @Param("conceito") String conceito);
+
+
     
 }

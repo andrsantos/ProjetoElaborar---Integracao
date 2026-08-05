@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core'; // Não esqueça do OnInit aqui
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core'; // Não esqueça do OnInit aqui
 import { Disciplina } from '../../models/disciplina.model';
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
 import { Router } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DisciplinaContextService } from '../../services/disciplina-context/disciplina-context-service'; 
 
@@ -25,7 +25,8 @@ export class HomeDisciplinas implements OnInit {
     private disciplinaService: DisciplinaService,
     private router: Router,
     private fb: FormBuilder,
-    private contextService: DisciplinaContextService 
+    private contextService: DisciplinaContextService,
+    @Inject(PLATFORM_ID) private platformId: Object 
   ) {
 
     this.disciplinaForm = this.fb.group({
@@ -37,8 +38,9 @@ export class HomeDisciplinas implements OnInit {
 
   ngOnInit(): void {
     this.contextService.limparContexto();
-
-    this.carregarDisciplinas();
+    if (isPlatformBrowser(this.platformId)) {
+      this.carregarDisciplinas();
+    }
   }
 
   carregarDisciplinas() {

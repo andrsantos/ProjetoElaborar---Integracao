@@ -77,6 +77,16 @@ export class Gerenciamento implements OnInit {
     this.managementForm = this.fb.group({
       tableType: ['', Validators.required]
     });
+
+    this.managementForm.get('tableType')?.valueChanges.subscribe(() => {
+      this.searchPerformed = false; 
+      this.listaMateriais = [];
+      this.listaProvas = [];
+      this.listaJobsCompleta = [];
+      this.onSearch();
+    });
+
+
   }
 
   onSearch(): void {

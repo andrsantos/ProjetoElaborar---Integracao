@@ -33,7 +33,9 @@ export class Breadcrumb implements OnInit {
         this.buildHierarchy(event.urlAfterRedirects);
       });
     this.buildHierarchy(this.router.url);
-    this.carregarSaldo();
+    if (isPlatformBrowser(this.platformId)) {
+      this.carregarSaldo();
+    }
   }
 
   carregarSaldo(): void {

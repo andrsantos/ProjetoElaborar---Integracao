@@ -42,9 +42,36 @@ export class AuthService {
     return null;
   }
 
+ 
   isAutenticado(): boolean {
-    return !!this.getToken();
+    const token = this.getToken();
+    
+    if (!token) {
+      return false;
+    }
+
+    try {
+      const payloadBase64 = token.split('.')[1];
+      
+      const payloadDecoded = JSON.parse(atob(payloadBase64));
+      
+      const dataExpiracao = payloadDecoded.exp * 1000;
+      const dataAtual = new Date().getTime();
+
+      if (dataAtual > dataExpiracao) {
+        this.logout(); 
+        return false;
+      }
+
+      return true; 
+      
+    } catch (error) {
+      console.error('Erro ao decodificar o token:', error);
+      return false; 
+    }
   }
+
+
 
   logout(): void {
     localStorage.removeItem('token_elaborar');

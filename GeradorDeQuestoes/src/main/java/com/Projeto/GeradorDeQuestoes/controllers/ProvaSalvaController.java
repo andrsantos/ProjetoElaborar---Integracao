@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,6 +93,7 @@ public class ProvaSalvaController {
             }
         }
 
+        novaProva.setDataCriacao(OffsetDateTime.now());
         ProvaEntity provaSalva = provaRepository.save(novaProva);
 
         System.out.println("CONTROLLER: Prova salva com sucesso! ID: " + provaSalva.getId());

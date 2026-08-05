@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -329,20 +330,30 @@ public class BancoQuestaoController {
 
     }
 
+
     @PutMapping("/{id}")
     public ResponseEntity<BancoQuestaoEntity> atualizarQuestao(@PathVariable UUID id, @RequestBody BancoQuestaoEntity questaoAtualizada) {
         
-        if (!repository.existsById(id)) {
+        Optional<BancoQuestaoEntity> questaoExistenteOpt = repository.findById(id);
 
+        if (questaoExistenteOpt.isEmpty()) {
             return ResponseEntity.notFound().build();
-
         }
 
-        questaoAtualizada.setId(id);
-        BancoQuestaoEntity salva = repository.save(questaoAtualizada);
-        return ResponseEntity.ok(salva);
+        BancoQuestaoEntity questaoOriginal = questaoExistenteOpt.get();
 
+        questaoOriginal.setEnunciado(questaoAtualizada.getEnunciado());
+        questaoOriginal.setAlternativas(questaoAtualizada.getAlternativas());
+        questaoOriginal.setRespostaCorreta(questaoAtualizada.getRespostaCorreta());
+        questaoOriginal.setComentarioTecnico(questaoAtualizada.getComentarioTecnico());
+        
+
+        BancoQuestaoEntity salva = repository.save(questaoOriginal);
+        
+        return ResponseEntity.ok(salva);
     }
+
+    
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluirQuestao(@PathVariable UUID id) {

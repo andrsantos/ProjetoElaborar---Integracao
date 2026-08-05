@@ -86,7 +86,7 @@
             <i class="fas fa-brain"></i>
           </div>
           <h3>A memória da IA está vazia!</h3>
-          <p>Faça o upload do seu primeiro PDF (Livro, Lista ou Prova) para alimentar a inteligência da disciplina.</p>
+          <p>Faça upload de livros e materiais didáticos para gerar novas questões do zero.</p>
           <button class="btn-insert-large" (click)="irParaCadastroDocumento()">
             <i class="fas fa-cloud-upload-alt"></i> Alimentar Base de Conhecimento
           </button>
@@ -139,143 +139,77 @@
       </ng-container>
     </div>
 
-    <!-- <div *ngIf="managementForm.get('tableType')?.value === 'processamentos'">
-      <ng-container *ngIf="!isSearching && searchPerformed">
-        <div class="table-header-actions">
-          <span>Processamentos Solicitados: <strong>{{ listaJobsFiltrada?.length || 0 }}</strong></span>
-          <button type="button" class="btn-insert" routerLink="/alimentacao">
-            <i class="fas fa-robot"></i> Nova Extração de Prova
-          </button>
-        </div>
 
-        <div class="empty-state-rag" *ngIf="!listaJobsFiltrada || listaJobsFiltrada.length === 0">
-          <div class="empty-icon-wrapper">
-            <i class="fas fa-tasks"></i>
-          </div>
-          <h3>Nenhum processamento encontrado</h3>
-          <p>Você ainda não enviou nenhum PDF de prova para a IA extrair.</p>
-          <button class="btn-insert-large" routerLink="/alimentacao">
-            <i class="fas fa-upload"></i> Processar Primeira Prova
-          </button>
-        </div>
-
-        <ng-container *ngIf="listaJobsFiltrada && listaJobsFiltrada.length > 0">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th style="width: 15%;">Data / Hora</th>
-                <th style="width: 35%;">Referência / Arquivo</th>
-                <th style="text-align: center; width: 15%;">Tipo</th>
-                <th style="text-align: center; width: 15%;">Status</th>
-                <th style="text-align: center; width: 20%;">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let job of listaJobsPaginada">
-                <td style="color: #6c757d; font-weight: 500;">
-                  <i class="far fa-calendar-alt" style="margin-right: 5px;"></i>
-                  {{ job.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
-                </td>
-                <td class="font-weight-bold" style="color: var(--cor-texto);">
-                  <i class="fas" [ngClass]="job.tipo === 'EXTRACAO_PROVA' ? 'fa-file-pdf' : 'fa-brain'" [style.color]="job.tipo === 'EXTRACAO_PROVA' ? '#e74c3c' : 'var(--cor-primaria)'" style="margin-right: 8px;"></i>
-                  {{ job.nomeArquivo || 'Arquivo Desconhecido' }}
-                </td>
-                <td style="text-align: center;">
-                  <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #4f46e5; background: #eef2ff; padding: 4px 8px; border-radius: 6px; letter-spacing: 0.5px;">
-                    {{ job.tipo === 'EXTRACAO_PROVA' ? 'Extração PDF' : (job.tipo || 'Extração PDF') }}
-                  </span>
-                </td>
-                <td style="text-align: center;">
-                    <span *ngIf="job.status === 'COMPLETED'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #155724; background-color: #d4edda; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
-                      <i class="fas fa-check-circle" style="margin-right: 4px;"></i> Concluído
-                    </span>
-                    <span *ngIf="job.status === 'PENDING' || job.status === 'PROCESSING'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #004085; background-color: #cce5ff; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
-                      <i class="fas fa-spinner fa-spin" style="margin-right: 4px;"></i> 
-                      {{ job.status === 'PENDING' ? 'Na Fila' : 'Processando' }}
-                    </span>
-                    <span *ngIf="job.status === 'ERROR'" style="display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: #721c24; background-color: #f8d7da; padding: 5px 12px; border-radius: 20px; letter-spacing: 0.5px;">
-                      <i class="fas fa-exclamation-circle" style="margin-right: 4px;"></i> Falha
-                    </span>
-                  </td>
-                <td style="text-align: center;">
-                  <button *ngIf="job.status === 'COMPLETED'" class="btn-insert" [routerLink]="['/revisao', job.id]" style="padding: 6px 16px; font-size: 0.85rem; background-color: var(--cor-sucesso); border: none; border-radius: 6px; color: white; cursor: pointer;">
-                    <i class="fas fa-eye"></i> Revisar
-                  </button>
-                  <button *ngIf="job.status === 'ERROR'" class="btn-excluir-topico" (click)="abrirModalErroJob(job)" style="padding: 6px 16px; font-size: 0.85rem; background-color: #fff0f0; border: 1px solid #dc3545; color: #dc3545; border-radius: 6px; cursor: pointer;">
-                    <i class="fas fa-info-circle"></i> Detalhes
-                  </button>
-                  <span *ngIf="job.status === 'PROCESSING' || job.status === 'PENDING'" style="color: var(--cor-secundaria); font-size: 0.85rem; font-style: italic;">
-                    Aguarde a IA...
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </ng-container>
-      </ng-container>
-    </div>
-
-  </div> -->
-
-  <div *ngIf="managementForm.get('tableType')?.value === 'provas'">
+    <div *ngIf="managementForm.get('tableType')?.value === 'provas'">
       <ng-container *ngIf="!isSearching && searchPerformed">
         
         <div class="table-header-actions">
           <span>Provas e Listas Cadastradas: <strong>{{ listaProvasFiltrada.length }}</strong></span>
         </div>
 
-        <!-- Tabela -->
-        <table class="admin-table">
+        <div class="empty-state-rag" *ngIf="listaProvasFiltrada.length === 0">
+          <div class="empty-icon-wrapper">
+            <i class="fas fa-file-signature"></i> 
+          </div>
+          <h3>Nenhuma prova ou lista encontrada!</h3>
+          <p>Insira provas e listas de questões para gerar questões inéditas.</p>
 
-          <thead>
-            <tr>
-              <th style="width: 35%;">Arquivo da Prova</th>
-              <th style="width: 20%;">Data de Upload</th>
-              <th style="text-align: center; width: 10%;">Total</th>
-              <th style="text-align: center; width: 20%;">Questões Extraídas</th>
-              <th style="text-align: center; width: 15%;">Ações</th>
-            </tr>
-          </thead>
+          <button class="btn-insert-large" routerLink="/alimentacao">
+            <i class="fas fa-magic"></i> Ir para o Gerador
+          </button>
 
-          <tbody>
-            <tr *ngFor="let prova of listaProvasPaginada">
-              
-              <td class="font-weight-bold" style="font-size: 1.05rem; color: var(--cor-texto);">
-                <i class="fas fa-file-pdf" style="color: #e74c3c; margin-right: 8px;"></i>
-                {{ prova.nomeOriginal }}
-              </td>
-              
-              <td style="color: #6c757d;">
-                {{ prova.dataUpload | date:'dd/MM/yyyy HH:mm' }}
-              </td>
+        </div>
 
+        <ng-container *ngIf="listaProvasFiltrada.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width: 35%;">Arquivo da Prova</th>
+                <th style="width: 20%;">Data de Upload</th>
+                <th style="text-align: center; width: 10%;">Total</th>
+                <th style="text-align: center; width: 20%;">Questões Extraídas</th>
+                <th style="text-align: center; width: 15%;">Ações</th>
+              </tr>
+            </thead>
 
-              <td style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #495057;">
-                {{ prova.quantidadeQuestoes }}
-              </td>
+            <tbody>
+              <tr *ngFor="let prova of listaProvasPaginada">
+                
+                <td class="font-weight-bold" style="font-size: 1.05rem; color: var(--cor-texto);">
+                  <i class="fas fa-file-pdf" style="color: #e74c3c; margin-right: 8px;"></i>
+                  {{ prova.nomeOriginal }}
+                </td>
+                
+                <td style="color: #6c757d;">
+                  {{ prova.dataUpload | date:'dd/MM/yyyy HH:mm' }}
+                </td>
 
-              <td style="text-align: center;">
-                <button (click)="verQuestoesDaProva(prova.id)" 
-                        style="background-color: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                  <i class="fas fa-list-ul" style="margin-right: 5px;"></i> Ver Questões
-                </button>
-              </td>
+                <td style="text-align: center; font-weight: bold; font-size: 1.1rem; color: #495057;">
+                  {{ prova.quantidadeQuestoes }}
+                </td>
 
-              <td style="text-align: center; display: flex; justify-content: center; gap: 8px;">
-                <button class="btn-edit-small" (click)="baixarProva(prova.id, prova.nomeOriginal)" title="Baixar Prova">
-                  <i class="fas fa-download"></i>
-                </button> 
-                <button class="btn-delete-small" (click)="excluirProva(prova)" title="Excluir Prova e Questões">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-              </td>
+                <td style="text-align: center;">
+                  <button (click)="verQuestoesDaProva(prova.id)" 
+                          style="background-color: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                    <i class="fas fa-list-ul" style="margin-right: 5px;"></i> Ver Questões
+                  </button>
+                </td>
 
-            </tr>
-          </tbody>
-        </table>
+                <td style="text-align: center; display: flex; justify-content: center; gap: 8px;">
+                  <button class="btn-edit-small" (click)="baixarProva(prova.id, prova.nomeOriginal)" title="Baixar Prova">
+                    <i class="fas fa-download"></i>
+                  </button> 
+                  <button class="btn-delete-small" (click)="excluirProva(prova)" title="Excluir Prova e Questões">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
 
       </ng-container>
     </div>
-
 
 </div>
