@@ -50,7 +50,7 @@
   flex-wrap: wrap;
 }
 
-.btn-outline, .btn-adicionar, .btn-primario {
+.btn-outline, .btn-adicionar, .btn-primario, .btn-avaliar {
   padding: 0.6rem 1rem;
   font-size: 0.9rem;
   font-weight: 500;
@@ -76,7 +76,13 @@
   color: white; 
 }
 
-.btn-outline:hover, .btn-adicionar:hover, .btn-primario:hover { 
+.btn-avaliar { 
+  background: rgb(43, 75, 255); 
+  border: none; 
+  color: rgb(249, 249, 250); 
+}
+
+.btn-outline:hover, .btn-adicionar:hover, .btn-primario, .btn-avaliar:hover { 
   opacity: 0.9; 
 }
 

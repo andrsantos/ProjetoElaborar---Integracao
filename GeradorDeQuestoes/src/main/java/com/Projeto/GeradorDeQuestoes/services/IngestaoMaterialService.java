@@ -136,7 +136,13 @@ public class IngestaoMaterialService {
         }
 
 
-        List<QuestaoDTO> questoesRevisadas = chamarAgenteRevisor(questoesExtraidas, promptPersonalizado, modoExtracao, usuario, saldoEsgotado, disciplinaId);
+        List<QuestaoDTO> questoesRevisadas = chamarAgenteVariador(questoesExtraidas, promptPersonalizado, modoExtracao, usuario, saldoEsgotado, disciplinaId);
+        
+        //  if (!saldoEsgotado.get()) {
+        //      System.out.println("-> Iniciando Etapa 4: Refinamento de Distratores...");
+        //      questoesRevisadas = chamarAgenteRefinadorDistratores(questoesRevisadas, usuario, saldoEsgotado);
+        //   }
+        
         embaralharLoteDeQuestoes(questoesRevisadas);
         System.out.println("Saldo atual após operação:" + carteiraService.consultarSaldoAtual(usuario));
         return questoesRevisadas;
@@ -146,180 +152,144 @@ public class IngestaoMaterialService {
         return questoes;
     }
 
-    public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao, 
+
+
+
+    public List<QuestaoDTO> chamarAgenteVariador(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao, 
                                                 UsuarioEntity usuario, AtomicBoolean saldoEsgotado, String disciplinaId) {
+
         if (questoes == null || questoes.isEmpty()) return questoes;
 
-        List<QuestaoDTO> todasRevisadas = new ArrayList<>();
+        List<QuestaoDTO> todasRevisadas = new ArrayList<>(); 
         int tamanhoLote = 2; 
 
-        for (int i = 0; i < questoes.size(); i += tamanhoLote) {
-            int fim = Math.min(i + tamanhoLote, questoes.size());
-            List<QuestaoDTO> loteAtual = questoes.subList(i, fim);
+        for (int i = 0; i < questoes.size(); i += tamanhoLote) { 
+            int fim = Math.min(i + tamanhoLote, questoes.size()); 
+            List<QuestaoDTO> loteAtual = questoes.subList(i, fim); 
             
-            if (saldoEsgotado.get()) {
-                todasRevisadas.addAll(loteAtual);
-                continue;
+            if (saldoEsgotado.get()) { 
+                todasRevisadas.addAll(loteAtual); 
+                continue; 
             }
 
-            System.out.println("Agente Revisor: Processando lote " + (i/tamanhoLote + 1) + " em modo " + modoExtracao);
+            System.out.println("Agente Variador (PIPELINE 3 AGENTES): Processando lote " + (i/tamanhoLote + 1)); 
             
             try {
-                String jsonLote = objectMapper.writeValueAsString(loteAtual);
+                String jsonLoteOriginal = objectMapper.writeValueAsString(loteAtual); 
 
-                if ("APENAS_VARIACOES".equals(modoExtracao)) {
-                    System.out.println("-> Iniciando Etapa 1: Extração do Mapa Conceitual...");
+                if ("APENAS_VARIACOES".equals(modoExtracao)) { 
+                    
+                    // ========================================================================
+                    // AGENTE 1: O ANALISTA (QUEBRANDO A ÂNCORA)
+                    // ========================================================================
+                    System.out.println("-> Etapa 1: Agente Analista (Mapeamento de Propriedades)..."); 
+
                     String promptAnalista = """
                         Você é um Agente Analista de Avaliações.
-                        Sua tarefa é analisar o lote de questões e desconstruir o conhecimento.
+                        Analise o lote de questões e desconstrua o conhecimento.
                         
-                        Retorne EXCLUSIVAMENTE um array JSON contendo objetos com a exata estrutura abaixo:
+                        Retorne EXCLUSIVAMENTE um array JSON com a exata estrutura abaixo:
                         [
                           {
                             "idOriginal": "Q123",
-                            "conceitoCentral": "O tema principal da questão",
-                            "competencia": "O que a questão avalia do aluno",
-                            "todasAsPropriedades": ["Liste de 6 a 10 características, regras, subconceitos ou exceções sobre o conceito central"],
-                            "propriedadesExploradas": ["Liste APENAS as propriedades que foram cobradas/citadas no texto e alternativas desta questão específica"]
+                            "conceitoCentral": "Tema principal",
+                            "competencia": "O que a questão avalia",
+                            "propriedadesExploradas": ["Propriedades citadas na questão"],
+                            "propriedadesNaoExploradas": ["Liste de 3 a 5 regras, subconceitos ou exceções sobre o tema que NÃO foram abordadas nesta questão. Seja específico."]
                           }
                         ]
-                        Não inclua as alternativas ou o enunciado no retorno. Retorne apenas o array JSON.
-                        """;
+                        Retorne apenas o array JSON.
+                        """; 
                     
-                    ChatResponse respostaAnalista = this.anthropicChatClient.prompt(promptAnalista + "\n\nLOTE DE QUESTÕES ORIGINAIS:\n" + jsonLote)
-                        .options(ChatOptions.builder().temperature(0.0).maxTokens(2000).build())
-                        .call().chatResponse();
+                    ChatResponse respostaAnalista = this.anthropicChatClient.prompt(promptAnalista + "\n\nLOTE ORIGINAL:\n" + jsonLoteOriginal) 
+                        .options(ChatOptions.builder().temperature(0.0).maxTokens(2000).build()) 
+                        .call().chatResponse(); 
+
+
                         
-                    Usage usageAnalista = respostaAnalista.getMetadata().getUsage();
-                    cobrancaLlmService.deduzirCusto(usuario, usageAnalista.getPromptTokens(), usageAnalista.getCompletionTokens(), "claude-haiku");
+                    Usage usageAnalista = respostaAnalista.getMetadata().getUsage(); 
+                    cobrancaLlmService.deduzirCusto(usuario, usageAnalista.getPromptTokens(), usageAnalista.getCompletionTokens(), "claude-haiku"); 
 
-                    String jsonGrafo = respostaAnalista.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
-                    jsonGrafo = garantirFechamentoJson(jsonGrafo);
+                    String jsonGrafo = respostaAnalista.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim(); 
+                    jsonGrafo = garantirFechamentoJson(jsonGrafo); 
+                    System.out.println("GRAFO DE CONHECIMENTO:" + jsonGrafo); 
+                    com.fasterxml.jackson.databind.JsonNode grafoArray = objectMapper.readTree(jsonGrafo); 
 
+                    StringBuilder instrucoesParaCriador = new StringBuilder(); 
+                    StringBuilder contextoTeoricoLote = new StringBuilder(); 
 
-                    com.fasterxml.jackson.databind.JsonNode grafoArray = objectMapper.readTree(jsonGrafo);
-                    StringBuilder instrucoesCriadorPorQuestao = new StringBuilder();
-                    StringBuilder contextoTeoricoLote = new StringBuilder();
-
-                    List<String> formatos = java.util.Arrays.asList(
-                        "Estudo de Caso / Cenário Prático (Mundo Real)",
-                        "Associação de Conceitos (Relacionar colunas ou itens)",
-                        "Análise de Múltiplas Afirmações (I, II, III e IV)",
-                        "Diálogo / Debate entre personagens ou profissionais",
-                        "Inversão Lógica (Focar na exceção ou no caminho inverso)",
-                        "Sequência de Eventos / Ordenação de Processos"
-                    );
-                    
-                    List<String> raciocinios = java.util.Arrays.asList(
-                        "Diagnóstico / Identificação da Causa Raiz",
-                        "Predição de Resultado (O que acontecerá se...)",
-                        "Comparação Analítica entre abordagens",
-                        "Aplicação Prática de Regra ou Teoria",
-                        "Inferência / Dedução a partir de informações incompletas",
-                        "Eliminação de Soluções Inviáveis"
-                    );
-
-                    for (com.fasterxml.jackson.databind.JsonNode node : grafoArray) {
-                        String idOriginal = node.path("idOriginal").asText();
+                    for (com.fasterxml.jackson.databind.JsonNode node : grafoArray) { 
+                        String idOriginal = node.path("idOriginal").asText(); 
                         String conceito = node.path("conceitoCentral").asText();
-                        String competencia = node.path("competencia").asText();
+                        String competencia = node.path("competencia").asText(); 
 
+                        SearchRequest request = SearchRequest.builder() 
+                            .query(conceito) 
+                            .topK(3) 
+                            .filterExpression("disciplina_id == '" + disciplinaId + "'") 
+                            .build(); 
 
-                        SearchRequest request = SearchRequest.builder()
-                        .query(conceito)
-                        .topK(4)
-                        .filterExpression("disciplina_id == '" + disciplinaId + "'")
-                        .build();
-
-                        List<Document> documentosEncontrados = this.vectorStore.similaritySearch(request);
-                        
-                        if (documentosEncontrados != null && !documentosEncontrados.isEmpty()) {
-                            contextoTeoricoLote.append("--- BASE TEÓRICA PARA O CONCEITO: ").append(conceito).append(" ---\n");
-                            
-                            List<String> chunksTextos = documentosEncontrados.stream()
-                                    .map(Document::getText)
-                                    .collect(Collectors.toList());
-                                    
-                            contextoTeoricoLote.append(String.join("\n[...]\n", chunksTextos)).append("\n\n");
-                            System.out.println("Sucesso: Contexto vetorial encontrado para '" + conceito + "'");
-                        } else {
-                            System.out.println("Aviso: Nenhum contexto encontrado na base para o conceito: " + conceito);
+                        List<Document> documentosEncontrados = this.vectorStore.similaritySearch(request); 
+                        if (documentosEncontrados != null && !documentosEncontrados.isEmpty()) { 
+                            contextoTeoricoLote.append("--- TEORIA PARA: ").append(conceito).append(" ---\n"); 
+                            documentosEncontrados.forEach(doc -> contextoTeoricoLote.append(doc.getText()).append("\n")); 
                         }
-
                         
-                        List<String> todasPropriedades = new ArrayList<>();
-                        node.path("todasAsPropriedades").forEach(p -> todasPropriedades.add(p.asText()));
-                        
-                        List<String> exploradas = new ArrayList<>();
-                        node.path("propriedadesExploradas").forEach(p -> exploradas.add(p.asText()));
+                        List<String> naoExploradas = new ArrayList<>(); 
+                        node.path("propriedadesNaoExploradas").forEach(p -> naoExploradas.add(p.asText())); 
+                        java.util.Collections.shuffle(naoExploradas); 
 
-                        List<String> livres = new ArrayList<>(todasPropriedades);
-                        livres.removeAll(exploradas);
-                        java.util.Collections.shuffle(livres);
-
-                        String pVar1A = livres.size() > 0 ? livres.get(0) : todasPropriedades.get(0);
-                        String pVar1B = livres.size() > 1 ? livres.get(1) : todasPropriedades.get(todasPropriedades.size() - 1);
-                        String pVar2A = livres.size() > 2 ? livres.get(2) : todasPropriedades.get(0);
-                        String pVar2B = livres.size() > 3 ? livres.get(3) : todasPropriedades.get(todasPropriedades.size() - 1);
-
-                        java.util.Collections.shuffle(formatos);
-                        java.util.Collections.shuffle(raciocinios);
-
-                        instrucoesCriadorPorQuestao.append("--- PARA A QUESTÃO ORIGINAL ID: ").append(idOriginal).append(" ---\n");
-                        instrucoesCriadorPorQuestao.append("Conceito Central: ").append(conceito).append("\n");
-                        instrucoesCriadorPorQuestao.append("Competência Avaliada: ").append(competencia).append("\n");
-                        instrucoesCriadorPorQuestao.append("-> INSTRUÇÃO VAR 1:\n");
-                        instrucoesCriadorPorQuestao.append("   - Use o Formato: [").append(formatos.get(0)).append("]\n");
-                        instrucoesCriadorPorQuestao.append("   - Use o Raciocínio: [").append(raciocinios.get(0)).append("]\n");
-                        instrucoesCriadorPorQuestao.append("   - Propriedades OBRIGATÓRIAS a serem avaliadas: '").append(pVar1A).append("' e '").append(pVar1B).append("'\n");
-                        instrucoesCriadorPorQuestao.append("-> INSTRUÇÃO VAR 2:\n");
-                        instrucoesCriadorPorQuestao.append("   - Use o Formato: [").append(formatos.get(1)).append("]\n");
-                        instrucoesCriadorPorQuestao.append("   - Use o Raciocínio: [").append(raciocinios.get(1)).append("]\n");
-                        instrucoesCriadorPorQuestao.append("   - Propriedades OBRIGATÓRIAS a serem avaliadas: '").append(pVar2A).append("' e '").append(pVar2B).append("'\n\n");
+                        instrucoesParaCriador.append("--- PARA A QUESTÃO ORIGINAL ID: ").append(idOriginal).append(" ---\n"); 
+                        instrucoesParaCriador.append("Conceito Central: ").append(conceito).append("\n"); 
+                        instrucoesParaCriador.append("Competência: ").append(competencia).append("\n"); 
+                        instrucoesParaCriador.append("Propriedade OBRIGATÓRIA para VAR1: ").append(naoExploradas.size() > 0 ? naoExploradas.get(0) : "").append("\n"); 
+                        instrucoesParaCriador.append("Propriedade OBRIGATÓRIA para VAR2: ").append(naoExploradas.size() > 1 ? naoExploradas.get(1) : "").append("\n\n"); 
                     }
 
-                    System.out.println("-> Iniciando Etapa 3: Geração com Criador Cego...");
-                    String instrucaoCriador = """
-                        Você é um Agente Pedagógico Criador.
-                        Sua missão é gerar um array JSON com DUAS QUESTÕES INÉDITAS para cada bloco de instruções fornecido abaixo.
-                        ATENÇÃO: Você propositalmente NÃO receberá o texto das questões originais. Você deve criar as questões inteiramente do zero, baseando-se APENAS no 'Conceito', na 'Competência', nos 'Formatos/Raciocínios' exigidos e focando EXCLUSIVAMENTE nas 'Propriedades Obrigatórias'.
+                    // ========================================================================
+                    // AGENTE 2: O CRIADOR (MICRO ESTUDOS DE CASO FGV - FOCA SÓ NA CORRETA)
+                    // ========================================================================
+                    System.out.println("-> Etapa 2: Agente Criador Cego (Redação de Cenários)..."); 
 
-                        REGRAS MANDATÓRIAS:
-                        1. NOVIDADE ESTRITA: A questão deve depender do conhecimento das 'Propriedades Obrigatórias' exigidas para ser resolvida.
-                        2. DISTRATORES ANTI-VÍCIO: Cada alternativa incorreta deve representar um erro conceitual DIFERENTE e independente. Não crie alternativas que explorem o mesmo equívoco com palavras diferentes.
-                        3. SIMETRIA VISUAL E VERBOSIDADE (CRÍTICO): Todas as 5 alternativas devem ter comprimentos de texto rigorosamente semelhantes. É ESTRITAMENTE PROIBIDO que a alternativa correta seja visivelmente mais longa, mais detalhada ou mais explicativa que as incorretas. Desenvolva os distratores com o mesmo nível de detalhamento, tom acadêmico e complexidade textual da resposta certa.
-                        4. CONSULTE A BASE TEÓRICA DO CONCEITO: Ao gerar as questões inéditas, sinta-se livre para o usar a base teórica, caso houver.
-                        5. ESTRUTURA DO JSON:
-                        - No campo 'id', use o prefixo 'VAR1-' e 'VAR2-' seguido do ID fornecido no bloco de instrução.
-                        - Preencha todos os campos: id, enunciado, alternativas (A a E), respostaCorreta, explicacao, conceito, competencia, comentarioTecnico, topico e nivel.
-                        - O campo tópico DEVE SER o nome da disciplina mais adequada ao conceito.
-                        - Alterne os níveis (UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO, UNIVERSITARIO_AVANCADO).
-                        - Certifique-se de que existe uma e APENAS UMA alternativa correta.
+                    String promptCriador = """
+                        Você é um Agente Pedagógico Criador Sênior (Padrão FGV).
+                        Sua missão é gerar DUAS QUESTÕES INÉDITAS para cada bloco de instruções, baseando-se APENAS nas 'Propriedades Obrigatórias' e no contexto teórico. VOCÊ NÃO RECEBERÁ AS QUESTÕES ORIGINAIS.
                         
-                        Retorne EXCLUSIVAMENTE o array JSON [].
+                        REGRAS MANDATÓRIAS:
+                        1. ENUNCIADO (MICRO ESTUDO DE CASO): Crie uma situação-problema prática, um cenário realista de diagnóstico ou tomada de decisão com um profissional/estudante. Finalize com um comando de ação direto.
+                        2. O GABARITO (CRÍTICO): Formule UMA alternativa correta que seja direta e objetiva. Jamais faça da alternativa correta uma explicação longa. A explicação real deve ir para o campo 'explicacao'.
+                        3. ESTRUTURA DOS DISTRATORES (NULOS): 
+                           - No campo 'alternativas', crie as 5 chaves (A, B, C, D, E).
+                           - Apenas a chave correspondente à 'respostaCorreta' deve conter o texto da alternativa correta.
+                           - As outras 4 chaves DEVEM ter o valor estrito de `null`.
+                        4. ESTRUTURA DO JSON: Retorne um array JSON. Prefixos 'VAR1-' e 'VAR2-' no campo id. Preencha todos os campos do QuestaoDTO.
+                           - O campo 'respostaCorreta' DEVE conter APENAS UMA LETRA MAIÚSCULA (A, B, C, D ou E). NUNCA insira texto explicativo neste campo.
+                           - O campo 'nivel' ACEITA EXCLUSIVAMENTE: UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO, UNIVERSITARIO_AVANCADO.
                         """;
 
-                    if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) {
-                        instrucaoCriador += "\nATENÇÃO - INSTRUÇÕES DE TOM/ESTILO DO USUÁRIO (Aplique em todas as questões):\n" + promptPersonalizado + "\n";
+                    if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) { 
+                        promptCriador += "\nINSTRUÇÕES DE TOM DO USUÁRIO:\n" + promptPersonalizado + "\n"; 
                     }
 
-                    String promptFinal = instrucaoCriador + 
-                                         "\n\n=== INSTRUÇÕES DE GERAÇÃO (CRIADOR CEGO) ===\n" + instrucoesCriadorPorQuestao.toString() + contextoTeoricoLote.toString();
+                    ChatResponse respostaCriador = this.anthropicChatClient.prompt(promptCriador + "\n\nINSTRUÇÕES DE GERAÇÃO:\n" + instrucoesParaCriador.toString() + contextoTeoricoLote.toString()) 
+                            .options(ChatOptions.builder().temperature(0.4).maxTokens(4096).build()) 
+                            .call().chatResponse(); 
 
-                    ChatResponse respostaCriador = this.anthropicChatClient.prompt(promptFinal)
-                            .options(ChatOptions.builder().temperature(0.3).maxTokens(4000).build())
-                            .call().chatResponse();
+                    Usage usageCriador = respostaCriador.getMetadata().getUsage(); 
+                    cobrancaLlmService.deduzirCusto(usuario, usageCriador.getPromptTokens(), usageCriador.getCompletionTokens(), "claude-haiku"); 
 
-                    Usage usageCriador = respostaCriador.getMetadata().getUsage();
-                    cobrancaLlmService.deduzirCusto(usuario, usageCriador.getPromptTokens(), usageCriador.getCompletionTokens(), "claude-haiku");
-
-                    String cleanJsonCriador = respostaCriador.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
-                    cleanJsonCriador = garantirFechamentoJson(cleanJsonCriador);
-
-                    List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJsonCriador,
-                            new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+                    String jsonCriador = garantirFechamentoJson(respostaCriador.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim());
                     
-                    todasRevisadas.addAll(loteRevisado);
+                    List<QuestaoDTO> questoesSemiProntas = objectMapper.readValue(jsonCriador, new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+                    
+                    // ========================================================================
+                    // AGENTE 3: O DISTRATOR (ÁRVORE DE CONFUSÕES)
+                    // ========================================================================
+                    List<QuestaoDTO> questoesProntas = chamarAgenteDistrator(questoesSemiProntas, usuario, saldoEsgotado);
+                    List<QuestaoDTO> questoesFinais = chamarAgenteRevisor(questoesProntas, usuario, saldoEsgotado);
+
+                    
+                    todasRevisadas.addAll(questoesFinais);
 
                 } else {
                     String instrucao = """
@@ -327,57 +297,651 @@ public class IngestaoMaterialService {
                         Sua missão é ler o lote de questões originais abaixo e criar UMA VARIAÇÃO INÉDITA para cada uma delas, alocando-a no campo 'questaoInspirada'.
 
                         REGRAS MANDATÓRIAS DE ESTRUTURA E PRESERVAÇÃO:
-                        1. INTOCABILIDADE DA ORIGINAL: Você é ESTRITAMENTE PROIBIDO de alterar o 'enunciado', as 'alternativas', o 'gabarito' ou qualquer outro dado da questão original na raiz do JSON. Eles devem ser retornados exatamente como foram enviados.
-                        2. A QUESTÃO INSPIRADA: O campo 'questaoInspirada' deve ser um OBJETO JSON completo. É EXCLUSIVAMENTE AQUI que você deve aplicar sua criatividade e as instruções personalizadas do usuário.
-                        - Mude o cenário, os valores e as marcas citadas para evitar plágio, mas mantenha a competência avaliada.
+                        1. INTOCABILIDADE DA ORIGINAL: Você é ESTRITAMENTE PROIBIDO de alterar o 'enunciado', as 'alternativas', o 'gabarito' ou qualquer outro dado da questão original na raiz do JSON.
+                        2. A QUESTÃO INSPIRADA: O campo 'questaoInspirada' deve ser um OBJETO JSON completo.
+                        - Mude o cenário e os valores para evitar plágio, mantendo a competência avaliada.
                         - No campo 'id' da questaoInspirada, use o prefixo 'INS-' seguido do ID original.
                         - Preencha os campos da questão inspirada: explicacao, conceito, competencia, comentarioTecnico, topico e nivel.
-                        - O campo tópico deve conter a grande área do conhecimento.
-                        - No campo 'nivel', use EXCLUSIVAMENTE: UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO ou UNIVERSITARIO_AVANCADO.
-                        - Faça as questões inspiradas com 5 alternativas: A,B,C,D e E. Se a original não tiver letra E, mesmo assim coloque letra E na inspirada.
+                        - Faça as questões inspiradas com 5 alternativas: A,B,C,D e E.
                         
-                        3. SIMETRIA VISUAL E VERBOSIDADE (CRÍTICO): Todas as 5 alternativas da 'questaoInspirada' devem ter comprimentos de texto rigorosamente semelhantes. É ESTRITAMENTE PROIBIDO que a alternativa correta seja visivelmente mais longa, mais detalhada ou mais explicativa que as incorretas.
+                        3. SIMETRIA VISUAL (CRÍTICO): Todas as 5 alternativas da 'questaoInspirada' devem ter comprimentos de texto rigorosamente semelhantes.
                         
-                        REGRAS DE FORMATAÇÃO DA SAÍDA:
-                        - Retorne APENAS o array JSON [].
-                        - NUNCA envie texto livre ou explicações fora do JSON.
-                        """;
+                        Retorne APENAS o array JSON [].
+                        """; 
 
-                    if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) {
-                        instrucao += "\n\nATENÇÃO - INSTRUÇÕES ESPECÍFICAS DO USUÁRIO:\n" + promptPersonalizado + "\n";
+                    if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) { 
+                        instrucao += "\n\nATENÇÃO - INSTRUÇÕES ESPECÍFICAS DO USUÁRIO:\n" + promptPersonalizado + "\n"; 
                     }
 
-                    ChatResponse respostaIA = this.anthropicChatClient.prompt(instrucao + "\n\n LOTE DE ENTRADA:\n" + jsonLote)
-                            .options(ChatOptions.builder().temperature(0.0).maxTokens(4000).build())
-                            .call().chatResponse();
+                    ChatResponse respostaIA = this.anthropicChatClient.prompt(instrucao + "\n\n LOTE DE ENTRADA:\n" + jsonLoteOriginal) 
+                            .options(ChatOptions.builder().temperature(0.2).maxTokens(4096).build()) 
+                            .call().chatResponse(); 
 
-                    Usage usageIA = respostaIA.getMetadata().getUsage();
-                    cobrancaLlmService.deduzirCusto(usuario, usageIA.getPromptTokens(), usageIA.getCompletionTokens(), "claude-haiku");
+                    Usage usageIA = respostaIA.getMetadata().getUsage(); 
+                    cobrancaLlmService.deduzirCusto(usuario, usageIA.getPromptTokens(), usageIA.getCompletionTokens(), "claude-haiku"); 
 
-                    String cleanJson = respostaIA.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
-                    cleanJson = garantirFechamentoJson(cleanJson);
+                    String cleanJson = respostaIA.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim(); 
+                    cleanJson = garantirFechamentoJson(cleanJson); 
 
-                    List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJson,
-                            new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
-                    
-                    todasRevisadas.addAll(loteRevisado);
+                    List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJson, new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {}); 
+                    todasRevisadas.addAll(loteRevisado); 
                 }
                 
-            } catch (RuntimeException e) {
-                if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
-                    System.err.println("Saldo esgotado durante a revisão do lote " + (i/tamanhoLote + 1));
-                    saldoEsgotado.set(true);
-                } else {
-                    System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+            } catch (RuntimeException e) { 
+                if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) { 
+                    System.err.println("Saldo esgotado durante a revisão do lote " + (i/tamanhoLote + 1)); 
+                    saldoEsgotado.set(true); 
+                } else { 
+                    System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage()); 
                 }
-                todasRevisadas.addAll(loteAtual);
-            } catch (Exception e) {
-                System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
-                todasRevisadas.addAll(loteAtual);
+                todasRevisadas.addAll(loteAtual);  
+            } catch (Exception e) { 
+                System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage()); 
+                todasRevisadas.addAll(loteAtual);  
             }
         }
-        return todasRevisadas;
+        return todasRevisadas; 
     }
+
+    // ========================================================================
+    // AGENTE DISTRATOR
+    // ========================================================================
+
+    private List<QuestaoDTO> chamarAgenteDistrator(List<QuestaoDTO> questoesSemiProntas, UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
+        if (questoesSemiProntas == null || questoesSemiProntas.isEmpty() || saldoEsgotado.get()) {
+            return questoesSemiProntas;
+        }
+
+        System.out.println("-> Etapa 3: Agente Especialista em Distratores...");
+        List<QuestaoDTO> questoesProntas = new ArrayList<>();
+
+        try {
+            String jsonEntrada = objectMapper.writeValueAsString(questoesSemiProntas);
+
+
+ 
+            String promptDistrator = """
+                Você é um Especialista Sênior em Psicometria Educacional e Engenharia de Avaliações,
+                com experiência na elaboração de questões de alta qualidade para concursos públicos,
+                especialmente no padrão de bancas como a FGV.
+
+                Você receberá um array JSON de questões SEMI-PRONTAS.
+                Cada questão contém:
+                - o enunciado;
+                - a alternativa correta preenchida;
+                - as demais alternativas com valor null;
+                - os demais metadados originais.
+
+                SUA MISSÃO:
+                Preencher exclusivamente as quatro alternativas incorretas, produzindo
+                distratores conceitualmente plausíveis, independentes entre si e capazes
+                de diferenciar estudantes que dominam o conceito daqueles que possuem
+                compreensão parcial ou equivocada.
+
+                ============================================================
+                PROCESSO OBRIGATÓRIO PARA CADA QUESTÃO
+                ============================================================
+
+                ETAPA 1 — IDENTIFICAR O CONCEITO-ALVO
+
+                Determine qual é o conceito, mecanismo, relação, procedimento ou princípio
+                efetivamente avaliado pela questão.
+
+                Não se limite a identificar palavras-chave da alternativa correta.
+                Considere também o enunciado e o contexto apresentado.
+
+                ETAPA 2 — GERAR CANDIDATOS A CONFUSÃO
+
+                Antes de escrever qualquer alternativa, identifique de 6 a 8 conceitos,
+                relações ou interpretações que poderiam plausivelmente ser confundidos
+                com o conceito-alvo por um estudante.
+
+                Dê preferência a conceitos:
+                - semanticamente próximos;
+                - pertencentes ao mesmo domínio de conhecimento;
+                - relacionados à mesma função, mecanismo, componente, processo, camada,
+                protocolo ou princípio;
+                - que apareçam em situações de confusão conceitual entre estudantes.
+
+                NÃO gere conceitos aleatórios apenas para produzir alternativas incorretas.
+
+                ETAPA 3 — AVALIAR CADA CONFUSÃO
+
+                Para cada candidato, avalie internamente três critérios:
+
+                1. PROXIMIDADE:
+                O conceito possui relação conceitual relevante com o conceito-alvo?
+
+                2. CONFUSÃO PLAUSÍVEL:
+                É razoável imaginar um estudante com conhecimento parcial confundindo
+                esse conceito com o conceito-alvo?
+
+                3. APLICAÇÃO AO ENUNCIADO:
+                Essa confusão pode produzir uma resposta incorreta especificamente
+                para o problema apresentado?
+
+                Um conceito só deve ser utilizado como base de distrator quando atender
+                satisfatoriamente aos três critérios.
+
+                ETAPA 4 — SELECIONAR AS QUATRO MELHORES CONFUSÕES
+
+                Selecione as quatro confusões mais fortes.
+
+                As quatro devem ser conceitualmente independentes.
+                Não utilize quatro variações do mesmo erro.
+
+                Quando possível, priorize:
+                1. conceitos imediatamente vizinhos;
+                2. funções semelhantes do mesmo componente;
+                3. mecanismos relacionados;
+                4. conceitos da mesma camada, módulo ou área;
+                5. conceitos mais distantes somente quando não houver alternativas melhores.
+
+                ETAPA 5 — TRANSFORMAR A CONFUSÃO EM DISTRATOR
+
+                Para cada uma das quatro confusões selecionadas, escreva uma alternativa
+                que represente o raciocínio incorreto associado àquela confusão.
+
+                O distrator NÃO deve ser simplesmente uma afirmação aleatória e falsa.
+
+                Ele deve representar algo que um estudante poderia considerar correto
+                devido ao erro conceitual identificado.
+
+                Sempre que possível, o distrator deve ser tecnicamente verdadeiro em
+                algum contexto relacionado ao conteúdo, mas inadequado para responder
+                à situação específica apresentada no enunciado.
+
+                IMPORTANTE:
+                O distrator não precisa alterar literalmente apenas uma palavra da resposta
+                correta. A prioridade é representar corretamente o erro conceitual.
+                Alterações em mais de um elemento são permitidas quando necessárias para
+                expressar naturalmente o mesmo erro.
+
+                ============================================================
+                REGRAS DE QUALIDADE DOS DISTRATORES
+                ============================================================
+
+                1. DISTRATORES CONCEITUAIS:
+                Cada distrator deve representar uma confusão, interpretação ou
+                raciocínio incorreto plausível.
+
+                2. INDEPENDÊNCIA:
+                Cada distrator deve explorar um erro diferente.
+                Não crie quatro alternativas que representem essencialmente o mesmo
+                equívoco com redações diferentes.
+
+                3. PROXIMIDADE CONCEITUAL:
+                Prefira conceitos próximos ao conceito-alvo.
+                Evite alternativas obviamente pertencentes a áreas ou conceitos
+                completamente diferentes quando houver confusões mais próximas.
+
+                4. PLAUSIBILIDADE:
+                Um estudante que conhece parcialmente o conteúdo deve conseguir
+                enxergar uma justificativa para escolher o distrator.
+
+                5. REGRA DO "POR QUÊ":
+                Para cada distrator, deve existir uma explicação objetiva para a
+                pergunta:
+                "Por que um estudante razoavelmente preparado poderia escolher esta
+                alternativa?"
+                Se não houver uma resposta plausível, substitua o distrator.
+
+                6. NÃO UTILIZE ALTERNATIVAS ABSURDAS:
+                Não crie alternativas que possam ser eliminadas apenas por senso
+                comum, por estarem completamente fora do assunto ou por serem
+                tecnicamente absurdas.
+
+                7. NÃO CRIE PEGADINHAS ARTIFICIAIS:
+                Não altere palavras, números ou termos arbitrariamente apenas para
+                tornar a alternativa incorreta.
+
+                8. SIMETRIA:
+                Todas as alternativas devem possuir comprimento, nível de detalhamento,
+                estrutura gramatical e tom acadêmico semelhantes.
+                A alternativa correta não pode se destacar por ser maior, mais precisa
+                ou mais explicativa.
+
+                9. NATURALIDADE:
+                Não copie mecanicamente a alternativa correta substituindo apenas
+                uma palavra. Cada distrator deve soar como uma afirmação independente
+                e naturalmente escrita por um elaborador de questões.
+
+                10. EVITE MARCADORES DE ALTERNATIVA ERRADA:
+                    Evite, salvo quando indispensável ao conteúdo, palavras como
+                    "sempre", "nunca", "exclusivamente", "somente" ou formulações
+                    evidentemente absolutas.
+
+                11. NÃO ENTREGAR O GABARITO:
+                    Nenhuma alternativa deve possuir características linguísticas,
+                    extensão ou nível de especificidade que revelem ser a correta.
+
+                12. UMA ÚNICA CORRETA:
+                    Após gerar os quatro distratores, verifique se existe uma e somente
+                    uma alternativa tecnicamente correta para o enunciado.
+
+                13. COMPRIMENTO DA ALTERNATIVA CORRETA:
+                    Tenha certeza de que a alternativa correta não está mais longa ou mais
+                    explicativa que as alternativas erradas. 
+
+                ============================================================
+                VALIDAÇÃO FINAL
+                ============================================================
+
+                Antes de retornar cada questão, verifique internamente:
+
+                - O conceito-alvo foi identificado corretamente?
+                - Cada distrator representa uma confusão conceitual diferente?
+                - Cada distrator é plausível para um estudante com conhecimento parcial?
+                - Os distratores são próximos do conceito avaliado?
+                - Algum distrator pode ser eliminado imediatamente por ser absurdo?
+                - Algum distrator é apenas uma paráfrase da resposta correta?
+                - A resposta correta continua sendo a única tecnicamente adequada?
+                - As cinco alternativas possuem simetria suficiente de tamanho e estilo?
+
+                Se algum distrator falhar nesses critérios, substitua-o antes de retornar.
+
+                ============================================================
+                REGRAS DE INTEGRIDADE DOS DADOS
+                ============================================================
+
+                - NÃO altere o 'id'.
+                - NÃO altere o 'enunciado'.
+                - NÃO altere 'respostaCorreta'.
+                - NÃO altere a alternativa correta.
+                - NÃO altere 'explicacao'.
+                - NÃO altere 'conceito'.
+                - NÃO altere 'competencia'.
+                - NÃO altere 'comentarioTecnico'.
+                - NÃO altere 'topico'.
+                - NÃO altere 'nivel'.
+                - Preencha somente os quatro campos de alternativas que estão null.
+
+                O campo 'alternativas' DEVE manter exatamente o formato:
+
+                {
+                    "A": "texto",
+                    "B": "texto",
+                    "C": "texto",
+                    "D": "texto",
+                    "E": "texto"
+                }
+
+                Retorne EXCLUSIVAMENTE o array JSON atualizado.
+                O retorno deve começar com '[' e terminar com ']'.
+                """;
+
+
+
+            ChatResponse respostaDistrator = this.anthropicChatClient.prompt(promptDistrator + "\n\nQUESTÕES PARA PREENCHIMENTO:\n" + jsonEntrada)
+                    .options(ChatOptions.builder().temperature(0.2).maxTokens(4096).build())
+                    .call().chatResponse();
+
+            Usage usageDistrator = respostaDistrator.getMetadata().getUsage();
+            cobrancaLlmService.deduzirCusto(usuario, usageDistrator.getPromptTokens(), usageDistrator.getCompletionTokens(), "claude-haiku");
+
+            String jsonFinal = garantirFechamentoJson(respostaDistrator.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim());
+            questoesProntas = objectMapper.readValue(jsonFinal, new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+
+        } catch (Exception e) {
+            System.err.println("Erro crítico no Agente Distrator: " + e.getMessage());
+            return questoesSemiProntas; 
+        }
+
+        return questoesProntas;
+    }
+
+
+    private List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoesProntas, UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
+        if (questoesProntas == null || questoesProntas.isEmpty() || saldoEsgotado.get()) {
+            return questoesProntas;
+        }
+
+        System.out.println("-> Etapa 4: Agente Editor (Revisor de Simetria e Anti-Marcadores)...");
+        List<QuestaoDTO> questoesFinais = new ArrayList<>();
+
+        try {
+            String jsonEntrada = objectMapper.writeValueAsString(questoesProntas);
+
+            String promptEditor = """
+                Você é um Revisor Editorial Sênior de Avaliações Psicométricas (Padrão FGV/SELECON).
+                Sua ÚNICA missão é aplicar a REGRA DA SIMETRIA VISUAL E SINTÁTICA em um lote de questões de múltipla escolha.
+
+                Você receberá um array JSON de questões prontas (com enunciado e as 5 alternativas preenchidas).
+
+                O PROBLEMA ATUAL:
+                A alternativa correta frequentemente está muito longa, explicativa e cheia de detalhes ("dando uma aula"), enquanto as incorretas (distratores) estão mais curtas ou com estrutura gramatical diferente. Isso cria um "marcador de teste" que permite ao aluno adivinhar a resposta pelo tamanho.
+
+                PASSO A PASSO OBRIGATÓRIO:
+                1. Analise as 5 alternativas de cada questão.
+                2. CORTE OS EXCESSOS: Remova qualquer excesso explicativo que possa existir na alternativa correta.
+                3. SIMETRIA VISUAL: Ajuste o texto para que as 5 alternativas tenham RIGOROSAMENTE a mesma contagem de palavras (margem de tolerância de no máximo 2 palavras de diferença entre a maior e a menor). 
+                4. PRESERVAÇÃO LÓGICA: NÃO altere o sentido técnico das alternativas. A correta deve continuar certa, e os distratores devem continuar representando o mesmo erro conceitual original.
+                
+                REGRAS INQUEBRÁVEIS DE FORMATAÇÃO:
+                - NÃO altere o gabarito ('respostaCorreta'), o enunciado ou qualquer outro metadado original.
+                - O retorno DEVE ser um ARRAY JSON começando com '[' e terminando com ']'.
+                - O campo 'alternativas' DEVE manter o formato JSON original: {"A": "texto", "B": "texto", "C": "texto", "D": "texto", "E": "texto"}.
+
+                Retorne EXCLUSIVAMENTE o array JSON atualizado e perfeitamente simétrico.
+                """;
+
+            ChatResponse respostaEditor = this.anthropicChatClient.prompt(promptEditor + "\n\nQUESTÕES PARA EDIÇÃO:\n" + jsonEntrada)
+                    .options(ChatOptions.builder().temperature(0.1).maxTokens(4096).build())
+                    .call().chatResponse();
+
+            Usage usageEditor = respostaEditor.getMetadata().getUsage();
+            cobrancaLlmService.deduzirCusto(usuario, usageEditor.getPromptTokens(), usageEditor.getCompletionTokens(), "claude-haiku");
+
+            String jsonFinal = garantirFechamentoJson(respostaEditor.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim());
+            questoesFinais = objectMapper.readValue(jsonFinal, new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+
+        } catch (Exception e) {
+            System.err.println("Erro crítico no Agente Editor: " + e.getMessage());
+            return questoesProntas; 
+        }
+
+        return questoesFinais;
+    }
+
+
+    // public List<QuestaoDTO> chamarAgenteRevisor(List<QuestaoDTO> questoes, String promptPersonalizado, String modoExtracao, 
+    //                                             UsuarioEntity usuario, AtomicBoolean saldoEsgotado, String disciplinaId) {
+    //     if (questoes == null || questoes.isEmpty()) return questoes;
+
+    //     List<QuestaoDTO> todasRevisadas = new ArrayList<>();
+    //     int tamanhoLote = 2; 
+
+    //     for (int i = 0; i < questoes.size(); i += tamanhoLote) {
+    //         int fim = Math.min(i + tamanhoLote, questoes.size());
+    //         List<QuestaoDTO> loteAtual = questoes.subList(i, fim);
+            
+    //         if (saldoEsgotado.get()) {
+    //             todasRevisadas.addAll(loteAtual);
+    //             continue;
+    //         }
+
+    //         System.out.println("Agente Revisor: Processando lote " + (i/tamanhoLote + 1) + " em modo " + modoExtracao);
+            
+    //         try {
+    //             String jsonLote = objectMapper.writeValueAsString(loteAtual);
+
+    //             if ("APENAS_VARIACOES".equals(modoExtracao)) {
+    //                 System.out.println("-> Iniciando Etapa 1: Extração do Mapa Conceitual...");
+    //                 String promptAnalista = """
+    //                     Você é um Agente Analista de Avaliações.
+    //                     Sua tarefa é analisar o lote de questões e desconstruir o conhecimento.
+                        
+    //                     Retorne EXCLUSIVAMENTE um array JSON contendo objetos com a exata estrutura abaixo:
+    //                     [
+    //                       {
+    //                         "idOriginal": "Q123",
+    //                         "conceitoCentral": "O tema principal da questão",
+    //                         "competencia": "O que a questão avalia do aluno",
+    //                         "todasAsPropriedades": ["Liste de 6 a 10 características, regras, subconceitos ou exceções sobre o conceito central"],
+    //                         "propriedadesExploradas": ["Liste APENAS as propriedades que foram cobradas/citadas no texto e alternativas desta questão específica"]
+    //                       }
+    //                     ]
+    //                     Não inclua as alternativas ou o enunciado no retorno. Retorne apenas o array JSON.
+    //                     """;
+                    
+    //                 ChatResponse respostaAnalista = this.anthropicChatClient.prompt(promptAnalista + "\n\nLOTE DE QUESTÕES ORIGINAIS:\n" + jsonLote)
+    //                     .options(ChatOptions.builder().temperature(0.0).maxTokens(3000).build())
+    //                     .call().chatResponse();
+                        
+    //                 Usage usageAnalista = respostaAnalista.getMetadata().getUsage();
+    //                 cobrancaLlmService.deduzirCusto(usuario, usageAnalista.getPromptTokens(), usageAnalista.getCompletionTokens(), "claude-haiku");
+
+    //                 String jsonGrafo = respostaAnalista.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
+    //                 jsonGrafo = garantirFechamentoJson(jsonGrafo);
+
+    //                 com.fasterxml.jackson.databind.JsonNode grafoArray = objectMapper.readTree(jsonGrafo);
+    //                 StringBuilder instrucoesCriadorPorQuestao = new StringBuilder();
+    //                 StringBuilder contextoTeoricoLote = new StringBuilder();
+
+    //                 List<String> formatos = java.util.Arrays.asList(
+    //                     "Estudo de Caso / Cenário Prático (Mundo Real)",
+    //                     "Associação de Conceitos (Relacionar colunas ou itens)",
+    //                     "Análise de Múltiplas Afirmações (I, II, III e IV)",
+    //                     "Diálogo / Debate entre personagens ou profissionais",
+    //                     "Inversão Lógica (Focar na exceção ou no caminho inverso)",
+    //                     "Sequência de Eventos / Ordenação de Processos"
+    //                 );
+                    
+    //                 List<String> raciocinios = java.util.Arrays.asList(
+    //                     "Diagnóstico / Identificação da Causa Raiz",
+    //                     "Predição de Resultado (O que acontecerá se...)",
+    //                     "Comparação Analítica entre abordagens",
+    //                     "Aplicação Prática de Regra ou Teoria",
+    //                     "Inferência / Dedução a partir de informações incompletas",
+    //                     "Eliminação de Soluções Inviáveis"
+    //                 );
+
+    //                 for (com.fasterxml.jackson.databind.JsonNode node : grafoArray) {
+    //                     String idOriginal = node.path("idOriginal").asText();
+    //                     String conceito = node.path("conceitoCentral").asText();
+    //                     String competencia = node.path("competencia").asText();
+
+
+    //                     SearchRequest request = SearchRequest.builder()
+    //                     .query(conceito)
+    //                     .topK(4)
+    //                     .filterExpression("disciplina_id == '" + disciplinaId + "'")
+    //                     .build();
+
+    //                     List<Document> documentosEncontrados = this.vectorStore.similaritySearch(request);
+                        
+    //                     if (documentosEncontrados != null && !documentosEncontrados.isEmpty()) {
+    //                         contextoTeoricoLote.append("--- BASE TEÓRICA PARA O CONCEITO: ").append(conceito).append(" ---\n");
+                            
+    //                         List<String> chunksTextos = documentosEncontrados.stream()
+    //                                 .map(Document::getText)
+    //                                 .collect(Collectors.toList());
+                                    
+    //                         contextoTeoricoLote.append(String.join("\n[...]\n", chunksTextos)).append("\n\n");
+    //                         System.out.println("Sucesso: Contexto vetorial encontrado para '" + conceito + "'");
+    //                     } else {
+    //                         System.out.println("Aviso: Nenhum contexto encontrado na base para o conceito: " + conceito);
+    //                     }
+
+                        
+    //                     List<String> todasPropriedades = new ArrayList<>();
+    //                     node.path("todasAsPropriedades").forEach(p -> todasPropriedades.add(p.asText()));
+                        
+    //                     List<String> exploradas = new ArrayList<>();
+    //                     node.path("propriedadesExploradas").forEach(p -> exploradas.add(p.asText()));
+
+    //                     List<String> livres = new ArrayList<>(todasPropriedades);
+    //                     livres.removeAll(exploradas);
+    //                     java.util.Collections.shuffle(livres);
+
+    //                     String pVar1A = livres.size() > 0 ? livres.get(0) : todasPropriedades.get(0);
+    //                     String pVar1B = livres.size() > 1 ? livres.get(1) : todasPropriedades.get(todasPropriedades.size() - 1);
+    //                     String pVar2A = livres.size() > 2 ? livres.get(2) : todasPropriedades.get(0);
+    //                     String pVar2B = livres.size() > 3 ? livres.get(3) : todasPropriedades.get(todasPropriedades.size() - 1);
+
+    //                     java.util.Collections.shuffle(formatos);
+    //                     java.util.Collections.shuffle(raciocinios);
+
+    //                     instrucoesCriadorPorQuestao.append("--- PARA A QUESTÃO ORIGINAL ID: ").append(idOriginal).append(" ---\n");
+    //                     instrucoesCriadorPorQuestao.append("Conceito Central: ").append(conceito).append("\n");
+    //                     instrucoesCriadorPorQuestao.append("Competência Avaliada: ").append(competencia).append("\n");
+    //                     instrucoesCriadorPorQuestao.append("-> INSTRUÇÃO VAR 1:\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Use o Formato: [").append(formatos.get(0)).append("]\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Use o Raciocínio: [").append(raciocinios.get(0)).append("]\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Propriedades OBRIGATÓRIAS a serem avaliadas: '").append(pVar1A).append("' e '").append(pVar1B).append("'\n");
+    //                     instrucoesCriadorPorQuestao.append("-> INSTRUÇÃO VAR 2:\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Use o Formato: [").append(formatos.get(1)).append("]\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Use o Raciocínio: [").append(raciocinios.get(1)).append("]\n");
+    //                     instrucoesCriadorPorQuestao.append("   - Propriedades OBRIGATÓRIAS a serem avaliadas: '").append(pVar2A).append("' e '").append(pVar2B).append("'\n\n");
+    //                 }
+
+    //                 System.out.println("-> Iniciando Etapa 3: Geração com Criador Cego...");
+    //                 String instrucaoCriador = """
+    //                     Você é um Agente Pedagógico Criador.
+    //                     Sua missão é gerar um array JSON com DUAS QUESTÕES INÉDITAS para cada bloco de instruções fornecido abaixo.
+    //                     ATENÇÃO: Você propositalmente NÃO receberá o texto das questões originais. Você deve criar as questões inteiramente do zero, baseando-se APENAS no 'Conceito', na 'Competência', nos 'Formatos/Raciocínios' exigidos e focando EXCLUSIVAMENTE nas 'Propriedades Obrigatórias'.
+
+    //                     REGRAS MANDATÓRIAS:
+    //                     1. NOVIDADE ESTRITA: A questão deve depender do conhecimento das 'Propriedades Obrigatórias' exigidas para ser resolvida.
+    //                     2. DISTRATORES ANTI-VÍCIO: Cada alternativa incorreta deve representar um erro conceitual DIFERENTE e independente. Não crie alternativas que explorem o mesmo equívoco com palavras diferentes.
+    //                     3. SIMETRIA VISUAL E VERBOSIDADE (CRÍTICO): Todas as 5 alternativas devem ter comprimentos de texto rigorosamente semelhantes. É ESTRITAMENTE PROIBIDO que a alternativa correta seja visivelmente mais longa, mais detalhada ou mais explicativa que as incorretas. Desenvolva os distratores com o mesmo nível de detalhamento, tom acadêmico e complexidade textual da resposta certa.
+    //                     4. CONSULTE A BASE TEÓRICA DO CONCEITO: Ao gerar as questões inéditas, sinta-se livre para o usar a base teórica, caso houver.
+    //                     5. ESTRUTURA DO JSON:
+    //                     - No campo 'id', use o prefixo 'VAR1-' e 'VAR2-' seguido do ID fornecido no bloco de instrução.
+    //                     - Preencha todos os campos: id, enunciado, alternativas (A a E), respostaCorreta, explicacao, conceito, competencia, comentarioTecnico, topico e nivel.
+    //                     - O campo tópico DEVE SER o nome da disciplina mais adequada ao conceito.
+    //                     - Alterne os níveis (UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO, UNIVERSITARIO_AVANCADO).
+    //                     - Certifique-se de que existe uma e APENAS UMA alternativa correta.
+                        
+    //                     Retorne EXCLUSIVAMENTE o array JSON [].
+    //                     """;
+
+    //                 if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) {
+    //                     instrucaoCriador += "\nATENÇÃO - INSTRUÇÕES DE TOM/ESTILO DO USUÁRIO (Aplique em todas as questões):\n" + promptPersonalizado + "\n";
+    //                 }
+
+    //                 String promptFinal = instrucaoCriador + 
+    //                                      "\n\n=== INSTRUÇÕES DE GERAÇÃO (CRIADOR CEGO) ===\n" + instrucoesCriadorPorQuestao.toString() + contextoTeoricoLote.toString();
+
+    //                 ChatResponse respostaCriador = this.anthropicChatClient.prompt(promptFinal)
+    //                         .options(ChatOptions.builder().temperature(0.3).maxTokens(3000).build())
+    //                         .call().chatResponse();
+
+    //                 Usage usageCriador = respostaCriador.getMetadata().getUsage();
+    //                 cobrancaLlmService.deduzirCusto(usuario, usageCriador.getPromptTokens(), usageCriador.getCompletionTokens(), "claude-haiku");
+
+    //                 String cleanJsonCriador = respostaCriador.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
+    //                 cleanJsonCriador = garantirFechamentoJson(cleanJsonCriador);
+
+    //                 List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJsonCriador,
+    //                         new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+                    
+    //                 todasRevisadas.addAll(loteRevisado);
+
+    //             } else {
+    //                 String instrucao = """
+    //                     Você é um Agente Pedagógico Sênior especializado em engenharia de avaliações.
+    //                     Sua missão é ler o lote de questões originais abaixo e criar UMA VARIAÇÃO INÉDITA para cada uma delas, alocando-a no campo 'questaoInspirada'.
+
+    //                     REGRAS MANDATÓRIAS DE ESTRUTURA E PRESERVAÇÃO:
+    //                     1. INTOCABILIDADE DA ORIGINAL: Você é ESTRITAMENTE PROIBIDO de alterar o 'enunciado', as 'alternativas', o 'gabarito' ou qualquer outro dado da questão original na raiz do JSON. Eles devem ser retornados exatamente como foram enviados.
+    //                     2. A QUESTÃO INSPIRADA: O campo 'questaoInspirada' deve ser um OBJETO JSON completo. É EXCLUSIVAMENTE AQUI que você deve aplicar sua criatividade e as instruções personalizadas do usuário.
+    //                     - Mude o cenário, os valores e as marcas citadas para evitar plágio, mas mantenha a competência avaliada.
+    //                     - No campo 'id' da questaoInspirada, use o prefixo 'INS-' seguido do ID original.
+    //                     - Preencha os campos da questão inspirada: explicacao, conceito, competencia, comentarioTecnico, topico e nivel.
+    //                     - O campo tópico deve conter a grande área do conhecimento.
+    //                     - No campo 'nivel', use EXCLUSIVAMENTE: UNIVERSITARIO_INICIANTE, UNIVERSITARIO_INTERMEDIARIO ou UNIVERSITARIO_AVANCADO.
+    //                     - Faça as questões inspiradas com 5 alternativas: A,B,C,D e E. Se a original não tiver letra E, mesmo assim coloque letra E na inspirada.
+                        
+    //                     3. SIMETRIA VISUAL E VERBOSIDADE (CRÍTICO): Todas as 5 alternativas da 'questaoInspirada' devem ter comprimentos de texto rigorosamente semelhantes. É ESTRITAMENTE PROIBIDO que a alternativa correta seja visivelmente mais longa, mais detalhada ou mais explicativa que as incorretas.
+                        
+    //                     REGRAS DE FORMATAÇÃO DA SAÍDA:
+    //                     - Retorne APENAS o array JSON [].
+    //                     - NUNCA envie texto livre ou explicações fora do JSON.
+    //                     """;
+
+    //                 if (promptPersonalizado != null && !promptPersonalizado.trim().isEmpty()) {
+    //                     instrucao += "\n\nATENÇÃO - INSTRUÇÕES ESPECÍFICAS DO USUÁRIO:\n" + promptPersonalizado + "\n";
+    //                 }
+
+    //                 ChatResponse respostaIA = this.anthropicChatClient.prompt(instrucao + "\n\n LOTE DE ENTRADA:\n" + jsonLote)
+    //                         .options(ChatOptions.builder().temperature(0.0).maxTokens(3000).build())
+    //                         .call().chatResponse();
+
+    //                 Usage usageIA = respostaIA.getMetadata().getUsage();
+    //                 cobrancaLlmService.deduzirCusto(usuario, usageIA.getPromptTokens(), usageIA.getCompletionTokens(), "claude-haiku");
+
+    //                 String cleanJson = respostaIA.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
+    //                 cleanJson = garantirFechamentoJson(cleanJson);
+
+    //                 List<QuestaoDTO> loteRevisado = objectMapper.readValue(cleanJson,
+    //                         new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+                    
+    //                 todasRevisadas.addAll(loteRevisado);
+    //             }
+                
+    //         } catch (RuntimeException e) {
+    //             if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
+    //                 System.err.println("Saldo esgotado durante a revisão do lote " + (i/tamanhoLote + 1));
+    //                 saldoEsgotado.set(true);
+    //             } else {
+    //                 System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+    //             }
+    //             todasRevisadas.addAll(loteAtual);
+    //         } catch (Exception e) {
+    //             System.err.println("Erro crítico no lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+    //             todasRevisadas.addAll(loteAtual);
+    //         }
+    //     }
+    //     return todasRevisadas;
+    // }
+
+
+    private List<QuestaoDTO> chamarAgenteRefinadorDistratores(List<QuestaoDTO> questoes, UsuarioEntity usuario, AtomicBoolean saldoEsgotado) {
+        if (questoes == null || questoes.isEmpty()) return questoes;
+
+        List<QuestaoDTO> todasRefinadas = new ArrayList<>();
+        int tamanhoLote = 2; 
+
+        for (int i = 0; i < questoes.size(); i += tamanhoLote) {
+            int fim = Math.min(i + tamanhoLote, questoes.size());
+            List<QuestaoDTO> loteAtual = questoes.subList(i, fim);
+            
+            if (saldoEsgotado.get()) {
+                todasRefinadas.addAll(loteAtual);
+                continue;
+            }
+
+            System.out.println("Agente Refinador: Melhorando distratores do lote " + (i/tamanhoLote + 1));
+            
+            try {
+                String jsonLote = objectMapper.writeValueAsString(loteAtual);
+
+                String promptRefinador = """
+                    Você é um Especialista Sênior em Psicometria Educacional e membro de uma Banca Examinadora rigorosa.
+                    Sua ÚNICA MISSÃO é ler o array JSON de questões fornecido e REFINAR OS DISTRATORES (as alternativas incorretas).
+                    
+                    REGRAS INQUEBRÁVEIS:
+                    1. INTOCABILIDADE ESTRUTURAL: É TERMINANTEMENTE PROIBIDO alterar os campos 'id', 'enunciado', 'respostaCorreta', 'explicacao', 'conceito', 'competencia', 'comentarioTecnico', 'topico' e 'nivel'.
+                    2. REFINAMENTO DAS INCORRETAS: Analise a 'respostaCorreta'. Se alguma alternativa incorreta for óbvia demais, absurda ou não fizer sentido gramatical com o enunciado, reescreva-a. Um bom distrator deve representar um erro conceitual comum, uma falácia lógica ou uma confusão de termos muito parecidos.
+                    3. SIMETRIA VISUAL (CRÍTICO): Todas as alternativas (A, B, C, D e E) devem ter um comprimento de texto rigorosamente semelhante. A resposta correta NUNCA pode se destacar por ser visivelmente mais longa ou mais bem explicada que as incorretas.
+                    
+                    Retorne EXCLUSIVAMENTE o array JSON atualizado, preservando toda a estrutura original e aplicando as melhorias apenas nos textos das alternativas incorretas.
+                    """;
+
+                ChatResponse respostaRefinador = this.anthropicChatClient.prompt(promptRefinador + "\n\nLOTE PARA REFINAMENTO:\n" + jsonLote)
+                        .options(ChatOptions.builder().temperature(0.2).maxTokens(3000).build())
+                        .call().chatResponse();
+
+
+                Usage usageRefinador = respostaRefinador.getMetadata().getUsage();
+                cobrancaLlmService.deduzirCusto(usuario, usageRefinador.getPromptTokens(), usageRefinador.getCompletionTokens(), "claude-haiku");
+
+                String cleanJson = respostaRefinador.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
+                cleanJson = garantirFechamentoJson(cleanJson);
+
+                List<QuestaoDTO> loteRefinado = objectMapper.readValue(cleanJson,
+                        new com.fasterxml.jackson.core.type.TypeReference<List<QuestaoDTO>>() {});
+                
+                todasRefinadas.addAll(loteRefinado);
+
+            } catch (RuntimeException e) {
+                if (e.getMessage() != null && e.getMessage().contains("Saldo insuficiente")) {
+                    System.err.println("Saldo esgotado durante o refinamento do lote " + (i/tamanhoLote + 1));
+                    saldoEsgotado.set(true);
+                } else {
+                    System.err.println("Erro no refinamento (Runtime) lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+                }
+                todasRefinadas.addAll(loteAtual); 
+            } catch (Exception e) {
+                System.err.println("Erro crítico no refinamento lote " + (i/tamanhoLote + 1) + ": " + e.getMessage());
+                todasRefinadas.addAll(loteAtual);
+            }
+        }
+        return todasRefinadas;
+    }
+
+
 
     private void embaralharLoteDeQuestoes(List<QuestaoDTO> questoes) {
         if (questoes == null || questoes.isEmpty()) {
@@ -657,7 +1221,7 @@ public class IngestaoMaterialService {
         ChatResponse response = this.anthropicChatClient.prompt(promptCompleto)
                 .options(ChatOptions.builder()
                         .temperature(0.0)
-                        .maxTokens(4096)
+                        .maxTokens(3000)
                         .build())
                 .call().chatResponse();
 

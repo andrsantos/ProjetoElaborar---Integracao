@@ -23,6 +23,7 @@ export class AlimentacaoService {
   constructor(private http: HttpClient) { }
 
   uploadPdf(file: File, titulo: string, disciplinaId: string): Observable<HttpEvent<any>> {
+
     const formData: FormData = new FormData();
     formData.append('file', file, file.name);
     formData.append('titulo', titulo);
@@ -35,9 +36,11 @@ export class AlimentacaoService {
       observe: 'events',
       responseType: 'text'
     });
+
   }
 
   uploadQuestoes(file: File): Observable<HttpEvent<any>> {
+
     const formData: FormData = new FormData();
     formData.append('file', file, file.name);
 
@@ -45,22 +48,30 @@ export class AlimentacaoService {
       reportProgress: true,
       observe: 'events',
     });
+
   }
 
   uploadQuestoesAsync(file: File, disciplinaId: string, prompt: string, modoExtracao: string): Observable<any> {
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('disciplinaId', disciplinaId);
     formData.append('modoExtracao', modoExtracao);
     
     if (prompt && prompt.trim() !== '') {
+
       formData.append('prompt', prompt.trim());
+
     }
 
     return this.http.post(`${this.API_URL_2}/async`, formData);
+    
   }
 
   consultarStatusJob(jobId: string): Observable<any> {
+
     return this.http.get(`${this.API_URL_5}/${jobId}`);
+
   }
+
 }
