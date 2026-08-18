@@ -77,7 +77,6 @@ public class BancoQuestaoController {
         novaQuestao.setCompetencia(questao.getCompetencia());
         novaQuestao.setComentarioTecnico(questao.getComentarioTecnico());
         novaQuestao.setTipo(TipoQuestao.MULTIPLA_ESCOLHA_5);
-        novaQuestao.setTopico(questao.getTopico());
         BancoQuestaoEntity salva = repository.save(novaQuestao);
         return ResponseEntity.ok(salva);
 
@@ -126,7 +125,6 @@ public class BancoQuestaoController {
 
         BancoQuestaoEntity questao = new BancoQuestaoEntity();
         questao.setDisciplinaId(dto.getDisciplinaId());
-        questao.setTopico(dto.getTopico());
         questao.setEnunciado(dto.getEnunciado());
         questao.setAlternativas(dto.getAlternativas());
         questao.setRespostaCorreta(dto.getRespostaCorreta());
@@ -243,7 +241,6 @@ public class BancoQuestaoController {
                 BancoQuestaoEntity questao = new BancoQuestaoEntity();
                 
                 questao.setDisciplinaId(dto.getDisciplinaId());
-                questao.setTopico(dto.getTopico());
                 questao.setEnunciado(dto.getEnunciado());
                 questao.setAlternativas(dto.getAlternativas());
                 questao.setRespostaCorreta(dto.getRespostaCorreta());
@@ -371,7 +368,7 @@ public class BancoQuestaoController {
 
     @GetMapping("/disciplina/{disciplinaId}/conceitos")
     public ResponseEntity<List<String>> listarConceitosDaDisciplina(@PathVariable String disciplinaId) {
-        List<String> conceitos = bancoService.listarConceitosPorDisciplina(disciplinaId);
+        List<String> conceitos = conceitoService.listarConceitosPorDisciplina(disciplinaId);
         return ResponseEntity.ok(conceitos);
     }
 

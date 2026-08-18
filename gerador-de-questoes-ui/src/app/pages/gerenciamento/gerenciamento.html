@@ -11,7 +11,7 @@
       <span class="spinner-micro"></span> Carregando ambiente...
     </div>
   </div>
-  <p>Pesquise os registros de documentação para ver os materiais cadastrados na sua base, <br>ou acompanhe o status de extração das provas geradas pela IA.</p>
+  <p>Pesquise os registros de documentação para ver os materiais cadastrados na sua base, <br>acompanhe o status das provas geradas ou gerencie os Padrões de Bancas.</p>
 
   <form [formGroup]="managementForm" (ngSubmit)="onSearch()">
     <div class="selection-group">
@@ -25,10 +25,11 @@
         Provas/Questões
       </label>
       
-      <!-- <label>
-        <input type="radio" formControlName="tableType" value="processamentos">
-        Histórico de Processamentos
-      </label> -->
+      <!-- NOVA OPÇÃO DE PROMPTS ADICIONADA AQUI -->
+      <label>
+        <input type="radio" formControlName="tableType" value="prompts">
+        Padrões de Bancas (Prompts)
+      </label>
     </div>
     
     <button type="submit" [disabled]="!managementForm.valid || isSearching" class="btn-search">
@@ -63,8 +64,8 @@
       </div>
     </div>
 
+    <!-- BLOCO 1: DOCUMENTOS -->
     <div *ngIf="managementForm.get('tableType')?.value === 'documentation'">
-      
       <ng-container *ngIf="!isSearching && searchPerformed">
         <div class="filters-container">
           <div class="filter-group">
@@ -116,6 +117,7 @@
                 </td>
 
                 <td style="text-align: center;">
+                  <!-- Removendo o gerenciamento de prompts acoplado ao documento (Se necessário, remova este botão e mude o layout da tabela) -->
                   <button class="btn-gerenciar-prompts" 
                           (click)="irParaGerenciamentoPrompts(doc)" 
                           style="background-color: #f8fafc; border: 1px solid var(--cor-primaria); padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--cor-primaria); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
@@ -139,7 +141,7 @@
       </ng-container>
     </div>
 
-
+    <!-- BLOCO 2: PROVAS -->
     <div *ngIf="managementForm.get('tableType')?.value === 'provas'">
       <ng-container *ngIf="!isSearching && searchPerformed">
         
@@ -212,4 +214,73 @@
       </ng-container>
     </div>
 
+    <!-- BLOCO 3: PROMPTS E BANCAS (NOVO) -->
+    <div *ngIf="managementForm.get('tableType')?.value === 'prompts'">
+      <ng-container *ngIf="!isSearching && searchPerformed">
+        
+        <div class="table-header-actions">
+          <span>Padrões de Banca Cadastrados: <strong>{{ listaPromptsFiltrada?.length || 0 }}</strong></span>
+          <button type="button" class="btn-insert" (click)="irParaNovoPrompt()">
+            <i class="fas fa-plus-circle"></i> Criar Novo Padrão
+          </button>
+        </div>
+
+        <div class="empty-state-rag" *ngIf="listaPromptsFiltrada?.length === 0">
+          <div class="empty-icon-wrapper">
+            <i class="fas fa-robot"></i> 
+          </div>
+          <h3>Nenhum padrão de banca encontrado!</h3>
+          <p>Cadastre diretrizes e padrões de bancas examinadoras para guiar a IA na criação das questões.</p>
+          <button class="btn-insert-large" (click)="irParaNovoPrompt()">
+            <i class="fas fa-plus"></i> Cadastrar Padrão
+          </button>
+        </div>
+
+        <ng-container *ngIf="listaPromptsFiltrada.length > 0">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th style="width: 30%;">Nome da Banca / Padrão</th>
+                <th style="width: 25%;">Nível de Dificuldade</th>
+                <th style="text-align: center; width: 15%;">Status</th>
+                <th style="text-align: center; width: 30%;">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let prompt of listaPromptsPaginada">
+                
+                <td class="font-weight-bold" style="font-size: 1.05rem; color: var(--cor-texto);">
+                  <i class="fas fa-id-badge" style="color: #3b82f6; margin-right: 8px;"></i>
+                  {{ prompt.nome }}
+                </td>
+                
+                <td style="color: #6c757d;">
+                  {{ prompt.nivel || 'Geral' }}
+                </td>
+
+                <td style="text-align: center;">
+                  <span [ngStyle]="{'color': prompt.ativo ? '#16a34a' : '#dc2626', 'font-weight': '600', 'background-color': prompt.ativo ? '#dcfce7' : '#fee2e2', 'padding': '4px 10px', 'border-radius': '6px', 'font-size': '0.9rem'}">
+                    {{ prompt.ativo ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+
+                <td style="text-align: center; display: flex; justify-content: center; gap: 8px;">
+                  <button (click)="verDetalhesPrompt(prompt.id)" 
+                          style="background-color: #f8fafc; border: 1px solid var(--cor-primaria); padding: 6px 12px; border-radius: 6px; cursor: pointer; color: var(--cor-primaria); font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="fas fa-edit"></i> Editar / Detalhes
+                  </button>
+                  <button class="btn-delete-small" (click)="excluirPrompt(prompt)" title="Excluir Padrão" style="padding: 6px 12px; border: 1px solid #dc3545; background: #fff0f0; border-radius: 6px; cursor: pointer;">
+                    <i class="fas fa-trash-alt" style="color: #dc3545;"></i>
+                  </button>
+                </td>
+
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+
+      </ng-container>
+    </div>
+
+  </div>
 </div>

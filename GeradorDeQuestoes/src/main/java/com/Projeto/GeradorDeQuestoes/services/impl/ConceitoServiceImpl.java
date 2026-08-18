@@ -1,8 +1,10 @@
 package com.Projeto.GeradorDeQuestoes.services.impl;
 
+import com.Projeto.GeradorDeQuestoes.dto.TaxonomiaDTO;
 import com.Projeto.GeradorDeQuestoes.entities.ConceitoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.ConceitoRepository;
+import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
 import com.Projeto.GeradorDeQuestoes.services.ConceitoService;
 import org.springframework.ai.chat.client.ChatClient;
@@ -23,17 +25,19 @@ import java.util.stream.Collectors;
 @Service
 public class ConceitoServiceImpl implements ConceitoService {
 
-
     private final ConceitoRepository conceitoRepository;
-    private final ChatClient anthropicChatClient; 
+    private final ChatClient anthropicChatClient;
     private final CobrancaLlmService cobrancaLlmService;
+    private final BancoQuestaoService bancoQuestaoService;
 
-    public ConceitoServiceImpl(ConceitoRepository conceitoRepository, 
-        ChatClient anthropicChatClient, 
-        CobrancaLlmService cobrancaLlmService) {
+    public ConceitoServiceImpl(ConceitoRepository conceitoRepository,
+        ChatClient anthropicChatClient,
+        CobrancaLlmService cobrancaLlmService, 
+        BancoQuestaoService bancoQuestaoService) {
         this.conceitoRepository = conceitoRepository;
         this.anthropicChatClient = anthropicChatClient;
         this.cobrancaLlmService = cobrancaLlmService;
+        this.bancoQuestaoService = bancoQuestaoService;
     }
 
     @Override
@@ -89,14 +93,14 @@ public class ConceitoServiceImpl implements ConceitoService {
             if (conceito.getTipoOrigem() == ConceitoEntity.TipoOrigem.DOCUMENTO && novaOrigem == ConceitoEntity.TipoOrigem.PROVA) {
                 conceito.setTipoOrigem(ConceitoEntity.TipoOrigem.PROVA);
                 conceito.setOrigemId(origemId);
-                return conceitoRepository.save(conceito); 
+                return conceitoRepository.save(conceito);
             }
-            return conceito; 
+            return conceito;
         }
 
         ConceitoEntity novoConceito = new ConceitoEntity();
         novoConceito.setNome(nomeConceito);
-        novoConceito.setDisciplina(disciplina); 
+        novoConceito.setDisciplina(disciplina);
         novoConceito.setTipoOrigem(novaOrigem);
         novoConceito.setOrigemId(origemId);
         
@@ -113,15 +117,39 @@ public class ConceitoServiceImpl implements ConceitoService {
     }
 
 
+    @Override
+    @Transactional
+    public void sincronizarTaxonomia(String disciplinaId, TaxonomiaDTO taxonomiaDTO, UsuarioEntity usuario) {
+        List<ConceitoEntity> conceitosAntigos = conceitoRepository.findByDisciplina(disciplinaId);
+        
+        if (!conceitosAntigos.isEmpty()) {
+            conceitoRepository.deleteAll(conceitosAntigos);
+        }
+
+        if (taxonomiaDTO.getTopicos() != null && !taxonomiaDTO.getTopicos().isEmpty()) {
+            List<ConceitoEntity> novosConceitos = taxonomiaDTO.getTopicos().stream().map(nomeTopico -> {
+                ConceitoEntity conceito = new ConceitoEntity();
+                conceito.setNome(nomeTopico);
+                conceito.setDisciplina(disciplinaId);
+                conceito.setTipoOrigem(ConceitoEntity.TipoOrigem.DOCUMENTO); 
+                return conceito;
+            }).collect(Collectors.toList());
+            conceitoRepository.saveAll(novosConceitos);
+        }
+
+        if (taxonomiaDTO.getTopicos() != null && !taxonomiaDTO.getTopicos().isEmpty()) {
+            bancoQuestaoService.reorganizarBancoAssincrono(disciplinaId, taxonomiaDTO.getTopicos(), usuario);
+        }
+    }
 
     @Override
-    public List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina, 
+    public List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina,
         UsuarioEntity usuario) {
         var outputConverter = new ListOutputConverter(new DefaultConversionService());
         String formatInstructions = outputConverter.getFormat();
 
-        String descricaoSegura = (descricaoDisciplina != null && !descricaoDisciplina.isBlank()) 
-                                 ? descricaoDisciplina 
+        String descricaoSegura = (descricaoDisciplina != null && !descricaoDisciplina.isBlank())
+                                 ? descricaoDisciplina
                                  : "Descrição não fornecida pelo professor.";
 
         String templateBase = """
@@ -166,7 +194,6 @@ public class ConceitoServiceImpl implements ConceitoService {
         }
     }
 
-
     @Override
     @Transactional
     public ConceitoEntity salvarConceitoSemente(String nomeTopico, String disciplinaId) {
@@ -178,7 +205,7 @@ public class ConceitoServiceImpl implements ConceitoService {
         ConceitoEntity semente = new ConceitoEntity();
         semente.setNome(nomeTopico);
         semente.setDisciplina(disciplinaId);
-        semente.setTipoOrigem(ConceitoEntity.TipoOrigem.DOCUMENTO); 
+        semente.setTipoOrigem(ConceitoEntity.TipoOrigem.DOCUMENTO);
         
         return conceitoRepository.save(semente);
     }

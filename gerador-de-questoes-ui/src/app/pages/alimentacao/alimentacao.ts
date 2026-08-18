@@ -6,6 +6,8 @@ import { ToastrService } from 'ngx-toastr';
 import { AlimentacaoService } from '../../services/alimentacao/alimentacao-service';
 import { DisciplinaContextService } from '../../services/disciplina-context/disciplina-context-service';
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
+import { PromptService } from '../../services/prompts/prompt-service';
+import { Prompt } from '../../models/prompt.model';
 
 @Component({
   selector: 'app-alimentacao',
@@ -30,12 +32,16 @@ export class Alimentacao implements OnInit {
   
   public modoExtracao: 'APENAS_ORIGINAIS' | 'ORIGINAIS_E_VARIACOES' | 'APENAS_VARIACOES' = 'APENAS_VARIACOES';
 
+  public promptsDisponiveis: Prompt[] = [];
+  public promptSelecionadoId: string = '';
+
   constructor(
     private alimentacaoService: AlimentacaoService,
     private toastr: ToastrService,
     private router: Router,
     private contextService: DisciplinaContextService, 
     private disciplinaService: DisciplinaService,
+    private promptService: PromptService,
     @Inject(PLATFORM_ID) private platformId: Object
 
   ) {}
@@ -61,10 +67,28 @@ export class Alimentacao implements OnInit {
         this.carregandoNomeDisciplina = false;
       }
     });
+
+    this.carregarPrompts();
+
+
+  }
+
+  carregarPrompts(): void {
+    this.promptService.listarTodos().subscribe({
+      next: (prompts) => {
+        this.promptsDisponiveis = prompts.filter(p => p.ativo);
+        console.log("Prompts:", this.promptsDisponiveis);
+      },
+      error: (err) => {
+        console.error('Erro ao buscar diretrizes de banca:', err);
+        this.toastr.error('Não foi possível carregar os perfis de banca examinadora.');
+      }
+    });
   }
 
   abrirModalExtracao(): void {
     this.isExtracaoModalOpen = true;
+    this.promptSelecionadoId = ''; 
   }
 
   fecharModalExtracao(): void {
@@ -117,12 +141,11 @@ export class Alimentacao implements OnInit {
 
     this.isUploading = true;
 
-    const promptParaEnviar = this.usarPromptPersonalizado ? this.promptPersonalizado : '';
 
     this.alimentacaoService.uploadQuestoesAsync(
       this.arquivoQuestoes, 
       this.disciplinaAtivaId, 
-      promptParaEnviar, 
+      this.promptSelecionadoId,
       this.modoExtracao
     ).subscribe({
       next: (response) => {

@@ -145,7 +145,6 @@ public class DisciplinaServiceImpl implements DisciplinaService{
                     .map(DocumentosReferenciaEntity::getId)
                     .collect(Collectors.toList());
             
-            promptRepository.deleteByDocumentoIdIn(documentosIds);
         }
 
         documentosReferenciaRepository.deleteByDisciplinaId(id);

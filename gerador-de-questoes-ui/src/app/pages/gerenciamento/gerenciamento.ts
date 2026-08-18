@@ -10,6 +10,8 @@ import { DisciplinaContextService } from '../../services/disciplina-context/disc
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
 import { PdfquestaoService } from '../../services/pdf-questao/pdfquestao-service';
 import { PdfQuestaoResumo } from '../../models/pdfquestao-resumo.model';
+import { PromptService } from '../../services/prompts/prompt-service';
+import { Prompt } from '../../models/prompt.model';
 
 @Component({
   selector: 'app-gerenciamento',
@@ -21,6 +23,7 @@ import { PdfQuestaoResumo } from '../../models/pdfquestao-resumo.model';
 export class Gerenciamento implements OnInit {
 
   public listaProvas: PdfQuestaoResumo[] = [];
+  public listaPrompts: Prompt[] = []; 
   
   public managementForm!: FormGroup;
   public searchPerformed = false;
@@ -47,15 +50,29 @@ export class Gerenciamento implements OnInit {
     private contextService: DisciplinaContextService,
     private disciplinaService: DisciplinaService,
     private pdfQuestaoService: PdfquestaoService,
+    private promptService: PromptService, 
     @Inject(PLATFORM_ID) private platformId: Object
-
   ) { }
 
+
   ngOnInit(): void {
+
+    this.managementForm = this.fb.group({
+      tableType: ['documentation', Validators.required] 
+    });
+
+    this.managementForm.get('tableType')?.valueChanges.subscribe(() => {
+      this.searchPerformed = false; 
+      this.listaMateriais = [];
+      this.listaProvas = [];
+      this.listaJobsCompleta = [];
+      this.listaPrompts = [];
+      this.onSearch();
+    });
+
     this.disciplinaAtivaId = this.contextService.getDisciplinaAtivaId();
 
-
-      if (!this.disciplinaAtivaId) {
+    if (!this.disciplinaAtivaId) {
       if (isPlatformBrowser(this.platformId)) {
         this.toastr.error('Nenhuma disciplina selecionada. Retornando ao início.', 'Atenção');
         this.router.navigate(['/']);
@@ -73,20 +90,7 @@ export class Gerenciamento implements OnInit {
         this.carregandoNomeDisciplina = false;
       }
     });
-
-    this.managementForm = this.fb.group({
-      tableType: ['', Validators.required]
-    });
-
-    this.managementForm.get('tableType')?.valueChanges.subscribe(() => {
-      this.searchPerformed = false; 
-      this.listaMateriais = [];
-      this.listaProvas = [];
-      this.listaJobsCompleta = [];
-      this.onSearch();
-    });
-
-
+    
   }
 
   onSearch(): void {
@@ -105,10 +109,10 @@ export class Gerenciamento implements OnInit {
       this.buscarHistoricoProcessamentos();
     } else if (tableType === 'provas') {
       this.buscarProvasBaseConhecimento(); 
+    } else if (tableType === 'prompts') { 
+      this.buscarPrompts();
     }
   }
-
-
 
   onFiltroChange(): void {
     this.paginaAtual = 1;
@@ -118,6 +122,68 @@ export class Gerenciamento implements OnInit {
     this.filtroTermo = '';
     this.paginaAtual = 1;
   }
+
+
+  buscarPrompts(): void {
+    this.promptService.listarTodos().subscribe({
+      next: (prompts) => {
+        this.listaPrompts = prompts;
+      },
+      error: (error) => {
+        console.error('Erro ao buscar prompts:', error);
+        this.toastr.error('Erro ao carregar a lista de Padrões de Banca.', 'Erro');
+        this.isSearching = false;
+      },
+      complete: () => {
+        this.isSearching = false;
+      }
+    });
+  }
+
+  get listaPromptsFiltrada(): Prompt[] {
+    const busca = this.filtroTermo.toLowerCase();
+    return this.listaPrompts.filter(prompt => 
+      prompt.nome && prompt.nome.toLowerCase().includes(busca)
+    );
+  }
+
+  get listaPromptsPaginada(): Prompt[] {
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+    return this.listaPromptsFiltrada.slice(inicio, fim);
+  }
+
+  irParaNovoPrompt(): void {
+    this.router.navigate(['/detalhe-prompt']);
+  }
+
+  verDetalhesPrompt(id: string): void {
+    this.router.navigate(['/detalhe-prompt'], { queryParams: { promptId: id } });
+  }
+
+  excluirPrompt(prompt: Prompt): void {
+    const confirmacao = window.confirm(
+      `⚠️ Tem certeza que deseja excluir o Padrão "${prompt.nome}"?\n\nEle não estará mais disponível na hora da extração. Esta ação é IRREVERSÍVEL.`
+    );
+
+    if (confirmacao) {
+      this.promptService.deletarPrompt(prompt.id).subscribe({
+        next: () => {
+          this.listaPrompts = this.listaPrompts.filter(p => p.id !== prompt.id);
+          
+          if (this.listaPromptsPaginada.length === 0 && this.paginaAtual > 1) {
+            this.paginaAtual--;
+          }
+          this.toastr.success(`O padrão "${prompt.nome}" foi excluído com sucesso!`, 'Exclusão Concluída');
+        },
+        error: (error) => {
+          console.error('Erro ao excluir prompt:', error);
+          this.toastr.error('Ocorreu um erro ao tentar excluir o padrão.', 'Erro');
+        }
+      });
+    }
+  }
+
 
   buscarHistoricoProcessamentos(): void {
     this.jobService.listarJobs().subscribe({
@@ -240,6 +306,8 @@ export class Gerenciamento implements OnInit {
       totalRegistros = this.listaJobsFiltrada.length;
     } else if (tipoAtivo === 'provas') {
       totalRegistros = this.listaProvasFiltrada.length;
+    } else if (tipoAtivo === 'prompts') { 
+      totalRegistros = this.listaPromptsFiltrada.length;
     }
       
     return Math.ceil(totalRegistros / this.itensPorPagina) || 1;
@@ -327,6 +395,4 @@ export class Gerenciamento implements OnInit {
   verQuestoesDaProva(provaId: string): void {
     this.router.navigate(['/gerenciamento/prova', provaId, 'questoes']);
   }
-
-  
 }

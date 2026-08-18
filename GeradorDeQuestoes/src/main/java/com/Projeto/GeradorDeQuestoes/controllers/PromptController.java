@@ -33,15 +33,17 @@ public class PromptController {
 
     @PostMapping
     public ResponseEntity<PromptResponseDTO> criarPrompt(@Valid @RequestBody PromptRequestDTO dto) {
+        System.out.println("Chegou " + dto.getNome());
         PromptResponseDTO novoPrompt = promptService.criar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(novoPrompt);
     }
 
-    @GetMapping("/documento/{documentoId}")
-    public ResponseEntity<List<PromptResponseDTO>> listarPromptsPorDocumento(@PathVariable String documentoId) {
-        List<PromptResponseDTO> prompts = promptService.listarPorDocumento(documentoId);
+    @GetMapping
+    public ResponseEntity<List<PromptResponseDTO>> listarTodos() {
+        List<PromptResponseDTO> prompts = promptService.listarTodos();
         return ResponseEntity.ok(prompts);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<PromptResponseDTO> buscarPromptPorId(@PathVariable String id) {

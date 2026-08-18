@@ -256,7 +256,6 @@ public class GeradorProvaService {
                 entity.getConceito(),
                 entity.getCompetencia(),
                 entity.getComentarioTecnico(),
-                entity.getTopico(),
                 entity.getNivel()
             );
     }

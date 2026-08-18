@@ -38,6 +38,7 @@
       <button class="btn-fechar" (click)="fecharModalExtracao()" [disabled]="isUploading">✕</button>
     </div>
     
+
     <div class="modal-content" style="padding: 20px;">
       
       <!-- Passo 1: Upload -->
@@ -61,7 +62,7 @@
         </div>
       </div>
 
-      <!-- Passo 2: Formato de Saída (NOVO BLOCO) -->
+      <!-- Passo 2: Formato de Saída -->
       <div class="form-group mb-4" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
         <label style="font-weight: 600; color: #495057; margin-bottom: 12px; display: block;">2. Formato de Saída (*)</label>
         
@@ -83,28 +84,34 @@
         </div>
       </div>
 
-      <!-- Passo 3: Prompt Personalizado -->
+      <!-- Passo 3: Padrão da Banca Examinadora (NOVO BLOCO) -->
       <div class="form-group" style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #dee2e6;">
-        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: #495057;">
-          <input type="checkbox" [(ngModel)]="usarPromptPersonalizado" style="width: 18px; height: 18px; cursor: pointer;">
-          3. Usar instruções personalizadas para a IA? (Opcional)
+        <label style="font-weight: 600; color: #495057; margin-bottom: 8px; display: block;">
+          3. Padrão da Banca Examinadora (Opcional)
         </label>
         
-        <p style="font-size: 0.85rem; color: #6c757d; margin-top: 5px; margin-left: 28px;">
-          Marque esta opção se desejar orientar a IA sobre como ler uma formatação específica desta prova.
+        <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 12px;">
+          Selecione o estilo de redação que o Agente Criador deve adotar ao gerar as questões inéditas.
         </p>
 
-        <div class="prompt-area" *ngIf="usarPromptPersonalizado" style="margin-top: 15px; margin-left: 28px; animation: fadeIn 0.3s ease-in-out;">
-          <textarea 
-            [(ngModel)]="promptPersonalizado" 
-            rows="4" 
-            placeholder="Ex: Por favor, ignore os textos motivadores longos. As questões começam sempre com a palavra 'QUESTÃO' em negrito. Concentre-se apenas nas questões de Raciocínio Lógico."
-            style="width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; font-family: inherit; resize: vertical;"
-            [disabled]="isUploading"
-          ></textarea>
-        </div>
-      </div>
+        <select 
+          [(ngModel)]="promptSelecionadoId" 
+          [disabled]="isUploading || promptsDisponiveis.length === 0"
+          style="width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; color: #495057; font-family: inherit; cursor: pointer;">
+          
+          <option value="">Padrão Geral (Neutro)</option>
+          
+          <!-- Interpola os prompts carregados do banco -->
+          <option *ngFor="let prompt of promptsDisponiveis" [value]="prompt.id">
+            {{ prompt.nome }} {{ prompt.nivel ? ' - ' + prompt.nivel : '' }}
+          </option>
+        </select>
+        
+        <small *ngIf="promptsDisponiveis.length === 0" style="color: #d32f2f; margin-top: 5px; display: block;">
+          ⚠️ Nenhum padrão de banca encontrado no banco de dados.
+        </small>
 
+      </div>
     </div>
 
     <!-- Footer -->

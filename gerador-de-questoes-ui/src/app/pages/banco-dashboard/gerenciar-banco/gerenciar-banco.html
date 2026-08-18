@@ -4,16 +4,32 @@
     <div class="dashboard-header" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
       <h1 style="margin: 0;">Gerenciar Banco de Questões</h1>
       
-      <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
-        <span class="tag-label">Disciplina:</span>
-        <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
-      </div>
+      <!-- WRAPPER ADICIONADO: Alinha a tag da disciplina e o botão de taxonomia na mesma linha -->
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        
+        <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
+          <span class="tag-label">Disciplina:</span>
+          <span class="tag-value">{{ nomeDisciplinaAtiva }}</span>
+        </div>
 
-      <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
-        <span class="spinner-micro"></span> Carregando ambiente...
+        <div class="discipline-loading" *ngIf="carregandoNomeDisciplina">
+          <span class="spinner-micro"></span> Carregando ambiente...
+        </div>
+
+        <button 
+          *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva"
+          routerLink="/banco-questoes/taxonomia" 
+          class="btn-taxonomia"
+          style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease;"
+          onmouseover="this.style.backgroundColor='#e2e8f0'"
+          onmouseout="this.style.backgroundColor='#f8fafc'"
+          title="Gerenciar a Árvore de Conceitos desta disciplina">
+          <span>⚙️</span> Configurar Taxonomia
+        </button>
+
+        
       </div>
     </div>
-
 
     <div class="header-info" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <p class="subtitle" style="margin: 0;">Visualize, edite ou exclua suas questões cadastradas.</p>
@@ -24,7 +40,6 @@
         </span>
       </div>
     </div>
-
 
     <div class="controls-bar" *ngIf="questoes && questoes.length > 0">
       <button class="btn-cadastrar" (click)="abrirCadastro()">
@@ -52,7 +67,6 @@
             title="Filtrar por data de criação"
           >
         </div>
-
 
         <div class="filter-item custom-dropdown-wrapper" #dropdownConceito>
           <div class="custom-select-container">
@@ -129,7 +143,7 @@
       <div class="card-header">
         <div class="badges">
           <span class="badge-tipo">{{ q.tipo }}</span>
-          <span class="badge-topico">{{ q.topico }}</span>
+          <!-- <span class="badge-topico">{{ q.topico }}</span> -->
           <span class="badge-topico">{{ q.conceito }}</span>
           <span class="badge-topico">{{ q.nivel }}</span>
         </div>
@@ -226,10 +240,6 @@
       <button class="btn-fechar" (click)="fecharCadastro()">✕</button>
     </div>
     <div class="modal-content">
-      <div class="form-group">
-        <label>Tópico(*)</label>
-        <input [(ngModel)]="novaQuestao.topico" type="text">
-      </div>
       <div class="form-group">
         <label>Enunciado(*)</label>
         <textarea [(ngModel)]="novaQuestao.enunciado" rows="4"></textarea>

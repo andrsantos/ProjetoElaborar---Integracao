@@ -12,31 +12,43 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import com.Projeto.GeradorDeQuestoes.dto.ClassificacaoDTO;
+import com.Projeto.GeradorDeQuestoes.dto.ClassificacaoLoteDTO;
 import com.Projeto.GeradorDeQuestoes.dto.ConceitoConfigDTO;
 import com.Projeto.GeradorDeQuestoes.dto.GeracaoAutomaticaRequest;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
+import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import jakarta.transaction.Transactional;
 
 
 @Service
 public class BancoQuestaoServiceImpl implements BancoQuestaoService {
 
     private BancoQuestaoRepository bancoQuestaoRepository;
-    private final ChatClient chatClient;
+    private final ChatClient chatClient;        
+    private final ChatClient anthropicChatClient;
     private final CobrancaLlmService cobrancaLlmService;
 
 
     BancoQuestaoServiceImpl(BancoQuestaoRepository bancoQuestaoRepository, 
         @Qualifier("openAiChatClient") ChatClient chatClient, 
+        @Qualifier("anthropicChatClient") ChatClient anthropicChatClient, 
+
         CobrancaLlmService cobrancaLlmService) {
         this.chatClient = chatClient;
         this.bancoQuestaoRepository = bancoQuestaoRepository;
+        this.anthropicChatClient = anthropicChatClient;
         this.cobrancaLlmService = cobrancaLlmService;
     }
 
@@ -56,22 +68,8 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
                 .toList();
     }
 
-    @Override
-    public List<QuestaoDTO> listarQuestoesPorTopico(String topico) {
-        return bancoQuestaoRepository.findByTopico(topico).stream()
-                .map(entity -> new QuestaoDTO(
-                    entity.getId().toString(),
-                        entity.getEnunciado(),
-                        entity.getAlternativas(),
-                        entity.getRespostaCorreta(),
-                        entity.getConceito(),
-                        entity.getCompetencia(),
-                        entity.getComentarioTecnico(),
-                        entity.getTopico(),
-                        entity.getNivel()
-                ))
-                .toList(); 
-    }
+
+    
 
     @Override
     public List<QuestaoDTO> listarQuestoesPorNivel(String nivel) {
@@ -177,115 +175,6 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
         return questoesGeradas;
     }
 
-    // @Override
-    // public String normalizarConceito(String enunciado, String conceitoSugerido, List<String> conceitosExistentes) {
-        
-    //     // =====================================================================
-    //     // AGENTE 1: O EXTRATOR (Analisa a questão e gera jargões puros)
-    //     // =====================================================================
-        
-    //     String templateAgente1 = """
-    //         Você é um Engenheiro Sênior de Computação analisando uma questão técnica.
-    //         Leia o enunciado abaixo e extraia a essência do assunto.
-            
-    //         ### REGRAS (BLACKLIST ESTRITA) ###
-    //         1. Retorne no máximo 3 termos. Use jargões técnicos ou protocolos exatos (ex: TCP/IP, VLAN, BGP, CSMA/CD).
-    //         2. É EXPRESSAMENTE PROIBIDO usar as palavras: "Conceitos", "Básicos", "Introdução", "Fundamentos", "Geral", "Teoria".
-    //         3. Não crie frases longas. Maximize a concisão (1 ou 2 palavras).
-            
-    //         ### QUESTÃO ###
-    //         {enunciado}
-            
-    //         Gere a lista com os termos:
-    //         """;
-            
-    //     List<String> jargoesExtraidos;
-    //     try {
-    //         String respostaAgente1 = this.chatClient.prompt()
-    //             .user(u -> u.text(templateAgente1).param("enunciado", enunciado))
-    //             .options(ChatOptions.builder().temperature(0.1).build())
-    //             .call()
-    //             .content();
-                
-    //         jargoesExtraidos = Arrays.stream(respostaAgente1.split("\n"))
-    //             .map(linha -> linha.replace("-", "").replace("*", "").trim())
-    //             .filter(linha -> !linha.isBlank())
-    //             .toList();
-                
-    //         System.out.println("🤖 Agente 1 (Extrator) gerou: " + jargoesExtraidos);
-            
-    //     } catch (Exception e) {
-    //         System.err.println("Erro no Agente 1: " + e.getMessage());
-    //         jargoesExtraidos = List.of(conceitoSugerido != null ? conceitoSugerido : "Geral");
-    //     }
-
-    //     // =====================================================================
-    //     // AGENTE 2: O BIBLIOTECÁRIO (Decide se recicla a árvore ou cria um galho)
-    //     // =====================================================================
-
-
-    //     String listaConceitosFormatada = (conceitosExistentes == null || conceitosExistentes.isEmpty()) 
-    //         ? "Nenhum tópico estrutural cadastrado. Baseie-se apenas nos jargões extraídos." 
-    //         : String.join("\n- ", conceitosExistentes);
-
-    //     var outputConverter = new BeanOutputConverter<>(DecisaoTaxonomiaDTO.class);
-    //     String formatInstructions = outputConverter.getFormat();
-
-    //     String templateAgente2 = """
-    //         Você é um Arquiteto de Dados Educacionais. Sua missão é classificar a questão no banco de dados.
-            
-    //         Você tem duas fontes de dados abaixo:
-    //         1. [ÁRVORE OFICIAL]: Os macro-tópicos que o professor já cadastrou.
-    //         2. [JARGÕES EXTRAÍDOS]: Os termos técnicos específicos desta questão.
-            
-    //         ### REGRAS (EM ORDEM DE PRIORIDADE) ###
-    //         1. RECICLAGEM OBRIGATÓRIA: Se a essência técnica dos jargões extraídos pertencer, mesmo que de forma ampla, a um dos itens da [ÁRVORE OFICIAL], você DEVE retornar EXATAMENTE o nome do tópico oficial. 
-    //            Ex: Se o jargão é 'IPv4' e a árvore possui 'Redes de Computadores e a Internet', use a árvore.
-               
-    //         2. CRIAÇÃO DE EXCEÇÃO (FALLBACK): Se (e somente se) o tema for TÃO ESPECÍFICO que não caiba em NENHUM tópico da árvore, você pode criar uma nova tag.
-    //            - Se criar, você DEVE usar um dos termos exatos da lista de [JARGÕES EXTRAÍDOS].
-    //            - NUNCA invente palavras. NUNCA crie frases longas. NUNCA use palavras genéricas.
-            
-    //         ### FORMATO DE SAÍDA ###
-    //         {format_instructions}
-
-    //         ### DADOS DE ENTRADA ###
-    //         [ÁRVORE OFICIAL DO PROFESSOR]:
-    //         - {arvore}
-            
-    //         [JARGÕES EXTRAÍDOS DESTA QUESTÃO]:
-    //         {jargoes}
-    //         """;
-
-    //     PromptTemplate promptTemplate2 = new PromptTemplate(templateAgente2);
-    //     Map<String, Object> params = Map.of(
-    //         "arvore", listaConceitosFormatada,
-    //         "jargoes", String.join(", ", jargoesExtraidos),
-    //         "format_instructions", formatInstructions
-    //     );
-
-    //     try {
-    //         String respostaJson = this.chatClient.prompt(promptTemplate2.render(params))
-    //             .options(ChatOptions.builder().temperature(0.0).build()) 
-    //             .call()
-    //             .content();
-
-    //         DecisaoTaxonomiaDTO decisao = outputConverter.convert(respostaJson);
-
-    //         if (decisao.getConceitoEhNovo()) {
-    //             System.out.println("✨ Novo galho técnico criado: [" + decisao.getConceitoFinal() + "] | Motivo: " + decisao.getJustificativa());
-    //         } else {
-    //             System.out.println("♻️ Reciclagem bem-sucedida: [" + decisao.getConceitoFinal() + "] | Motivo: " + decisao.getJustificativa());
-    //         }
-
-    //         return decisao.getConceitoFinal();
-            
-    //     } catch (Exception e) {
-    //         System.err.println("Erro no Agente 2 (Bibliotecário): " + e.getMessage());
-    //         return !jargoesExtraidos.isEmpty() ? jargoesExtraidos.get(0) : "Geral";
-    //     }
-    // }
-
    @Override
     public String normalizarConceito(String enunciado, String conceitoSugerido, List<String> conceitosExistentes, 
         UsuarioEntity usuario) {
@@ -350,11 +239,148 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
     }
 
 
-
-
     public List<String> listarConceitosPorDisciplina(String disciplinaId) {
         return bancoQuestaoRepository.findConceitosDistintosPorDisciplina(disciplinaId);
     }
+
+
+
+    public List<ClassificacaoLoteDTO> normalizarConceitosEmLote(String questoesJson, List<String> conceitosExistentes, UsuarioEntity usuario) {
+        
+        if (conceitosExistentes == null || conceitosExistentes.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        String listaConceitosFormatada = String.join("\n- ", conceitosExistentes);
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String formatoJsonExemplo = """
+            [
+              {
+                "questaoId": "123",
+                "topicoEscolhido": "Nome do Tópico Exato"
+              }
+            ]
+            """;
+
+        String templateAgente = """
+            Você é um Engenheiro de Dados Educacionais especialista em concursos públicos.
+            Sua tarefa é ler um LOTE de questões fornecidas e alocar CADA UMA DELAS em EXATAMENTE UM dos tópicos da nossa [ÁRVORE OFICIAL].
+            
+            ### REGRAS OBRIGATÓRIAS ###
+            1. CLASSIFICAÇÃO ESTRITA: Você DEVE escolher o tópico que melhor representa a essência da questão.
+            2. CÓPIA FIEL: O nome do tópico escolhido DEVE ser idêntico (letra por letra) a um dos itens da [ÁRVORE OFICIAL].
+            3. PROIBIÇÃO ABSOLUTA: Você é EXPRESSAMENTE PROIBIDO de inventar novos tópicos, alterar palavras ou criar exceções.
+            4. ESPECIFICIDADE: Se houver tópicos pai e filho (ex: '2 Protocolos' e '2.1 TCP/IP'), prefira sempre o tópico mais específico.
+            
+            ### FORMATO DE SAÍDA ###
+            Retorne EXCLUSIVAMENTE um array JSON puro, sem marcações markdown, com a seguinte estrutura:
+            {formato_saida}
+
+            ### DADOS DE ENTRADA ###
+            [ÁRVORE OFICIAL DO PROFESSOR]:
+            - {arvore}
+            
+            [LOTE DE QUESTÕES A CLASSIFICAR]:
+            {questoesJson}
+            """;
+
+        PromptTemplate promptTemplate = new PromptTemplate(templateAgente);
+        
+        Map<String, Object> params = Map.of(
+            "arvore", listaConceitosFormatada,
+            "questoesJson", questoesJson,
+            "formato_saida", formatoJsonExemplo
+        );
+
+        try {
+
+                ChatResponse response = this.anthropicChatClient.prompt(promptTemplate.render(params))
+                .options(ChatOptions.builder().temperature(0.0).build()) 
+                .call()
+                .chatResponse();
+
+            Usage usage = response.getMetadata().getUsage();
+            cobrancaLlmService.deduzirCusto(usuario, usage.getPromptTokens(), usage.getCompletionTokens(), "gpt-4o");
+
+            String respostaJson = response.getResult().getOutput().getText().replaceAll("(?s)```json\\s*|```", "").trim();
+
+            List<ClassificacaoLoteDTO> classificacoes = objectMapper.readValue(
+                respostaJson, 
+                new com.fasterxml.jackson.core.type.TypeReference<List<ClassificacaoLoteDTO>>() {}
+            );
+            
+            System.out.println("🎯 Lote de " + classificacoes.size() + " questões classificado com sucesso na Árvore Oficial.");
+            return classificacoes;
+            
+        } catch (Exception e) {
+            System.err.println("❌ Erro crítico no Agente Classificador em Lote: " + e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+
+    @Async
+    @Transactional 
+    public void reorganizarBancoAssincrono(String disciplinaId, List<String> novaTaxonomia, UsuarioEntity usuario) {
+
+        System.out.println("[ASYNC] Iniciando recatalogação do banco para a disciplina: " + disciplinaId);
+
+        List<BancoQuestaoEntity> todasQuestoes = bancoQuestaoRepository.findByDisciplinaId(disciplinaId);
+        if (todasQuestoes.isEmpty()) {
+            System.out.println("Nenhuma questão encontrada para recatalogar.");
+            return;
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        int tamanhoLote = 20;
+
+        for (int i = 0; i < todasQuestoes.size(); i += tamanhoLote) {
+            int fim = Math.min(todasQuestoes.size(), i + tamanhoLote);
+            List<BancoQuestaoEntity> lote = todasQuestoes.subList(i, fim);
+
+            try {
+                ArrayNode jsonArray = mapper.createArrayNode();
+                for (BancoQuestaoEntity q : lote) {
+                    ObjectNode no = mapper.createObjectNode();
+                    no.put("questaoId", q.getId().toString()); 
+                    no.put("enunciado", q.getEnunciado());
+                    jsonArray.add(no);
+                }
+                
+                String questoesJson = mapper.writeValueAsString(jsonArray);
+
+                List<ClassificacaoLoteDTO> classificacoes = normalizarConceitosEmLote(questoesJson, novaTaxonomia, usuario);
+                
+                System.out.println("🤖 IA retornou " + classificacoes.size() + " classificações para o lote atual.");
+
+                Map<String, String> mapaClassificacoes = classificacoes.stream()
+                    .filter(c -> c.getQuestaoId() != null && c.getTopicoEscolhido() != null) 
+                    .collect(Collectors.toMap(ClassificacaoLoteDTO::getQuestaoId, ClassificacaoLoteDTO::getTopicoEscolhido));
+
+                int atualizadas = 0;
+                for (BancoQuestaoEntity questao : lote) {
+                    String novoConceito = mapaClassificacoes.get(questao.getId().toString());
+                    
+                    if (novoConceito != null) {
+                        questao.setConceito(novoConceito);
+                        atualizadas++;
+                    } else {
+                        System.out.println("⚠️ ALERTA: Conceito não encontrado/retornado para a Questão ID: " + questao.getId());
+                    }
+                }
+
+                bancoQuestaoRepository.saveAll(lote);
+                System.out.println("✅ Lote " + fim + "/" + todasQuestoes.size() + " salvo. Questões atualizadas: " + atualizadas);
+
+            } catch (Exception e) {
+                System.err.println("❌ Falha ao processar lote de recatalogação: " + e.getMessage());
+            }
+        }
+        
+        System.out.println("🎉 [ASYNC] Recatalogação concluída para a disciplina: " + disciplinaId);
+    }
+
 
     
 }

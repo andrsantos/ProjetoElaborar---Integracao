@@ -1,0 +1,87 @@
+<div class="tax-container">
+  
+  <div class="tax-header">
+    <div class="title-group">
+      <h2>Árvore de Conceitos</h2>
+      <p class="subtitle">Editando as propriedades de <strong>{{ taxonomia.nomeDisciplina }}</strong></p>
+    </div>
+  </div>
+
+  <div class="tax-alert">
+    <span class="alert-icon">⚠️</span> 
+    <div class="alert-text">
+      <strong>Atenção ao Salvar:</strong> Alterar a estrutura desta árvore acionará o Agente IA para reavaliar e reclassificar 
+      <strong>todas as questões</strong> deste banco. O processo roda em background e pode levar alguns minutos.
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="carregando" class="text-center py-5">
+    <span class="spinner-border text-primary" role="status"></span>
+    <p class="mt-2 text-muted">Carregando taxonomia do servidor...</p>
+  </div>
+
+  <div class="tax-grid" *ngIf="!carregando">
+    
+    <!-- COLUNA ESQUERDA: Editor Visual -->
+    <div class="tax-card">
+      <div class="tax-card-header">
+        <h3>Visualizador Estrutural</h3>
+        <button class="btn-outline" (click)="adicionarTopico()">+ Novo Tópico</button>
+      </div>
+      
+      <div class="tax-card-body visual-scroll">
+        <ul class="tax-list">
+          <li *ngFor="let topico of taxonomia.topicos; let i = index; trackBy: trackByFn">
+            <div class="topic-row" [ngStyle]="{'margin-left.px': getIdentacaoNivel(taxonomia.topicos[i])}">
+              <span class="folder-icon">📂</span>
+              <input type="text" 
+                     class="topic-input" 
+                     [(ngModel)]="taxonomia.topicos[i]" 
+                     (ngModelChange)="onVisualTreeChange()"
+                     placeholder="Digite o conceito...">
+              <button class="btn-delete" title="Remover Tópico" (click)="removerTopico(i)">❌</button>
+            </div>
+          </li>
+        </ul>
+        <div *ngIf="taxonomia.topicos.length === 0" class="empty-state">Nenhum tópico cadastrado nesta disciplina. Adicione um novo!</div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA: Editor JSON Bruto -->
+    <div class="tax-card">
+      <div class="tax-card-header">
+        <h3>Editor Avançado (JSON)</h3>
+        <span class="badge badge-success" *ngIf="!jsonErro">JSON Válido</span>
+        <span class="badge badge-danger" *ngIf="jsonErro">Erro Sintático</span>
+      </div>
+      
+      <div class="tax-card-body no-padding relative-container">
+        <textarea 
+          class="json-editor" 
+          [(ngModel)]="jsonString" 
+          (ngModelChange)="onJsonChange()"
+          spellcheck="false">
+        </textarea>
+
+        <div *ngIf="jsonErro" class="error-overlay">
+          <span class="error-title">Erro de Formatação:</span>
+          <span class="error-msg">{{ jsonErro }}</span>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- RODAPÉ DE AÇÕES -->
+  <div class="tax-footer">
+    <button class="btn-cancel" routerLink="/banco-questoes/gerenciar">Cancelar</button>
+    <button class="btn-primary" 
+            [disabled]="!!jsonErro || sincronizando || carregando"
+            (click)="salvarERecatalogar()">
+      <span *ngIf="!sincronizando">⚙️ Salvar e Recatalogar Banco</span>
+      <span *ngIf="sincronizando">Processando...</span>
+    </button>
+  </div>
+
+</div>

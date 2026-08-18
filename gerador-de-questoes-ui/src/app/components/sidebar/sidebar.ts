@@ -43,6 +43,8 @@ export class Sidebar implements OnInit {
           { path: '/banco-questoes', label: 'Banco de Questões', exact: false },
           { path: '/provas-salvas', label: 'Provas Salvas', exact: false },
           { path: '/alimentacao', label: 'Extração de Questões', exact: false },
+          { path: '/processamentos', label: 'Menu de Processamentos', exact: false },
+
         ];
 
         this.disciplinaService.buscarNomeDisciplina(id).subscribe({

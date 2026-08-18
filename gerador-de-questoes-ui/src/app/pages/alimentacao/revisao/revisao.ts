@@ -235,7 +235,6 @@ export class Revisao implements OnInit, OnDestroy {
 
   private converterParaBancoQuestao(q: any): BancoQuestao {
     return {
-      topico: q.topico || "Tópico não classificado",
       enunciado: q.enunciado,
       tipo: "MULTIPLA_ESCOLHA_5",
       alternativas: {

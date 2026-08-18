@@ -2,7 +2,7 @@ package com.Projeto.GeradorDeQuestoes.dto;
 
 public class PromptRequestDTO {
 
-    private String documentoId; 
+    private String nome; 
     private String nivel; 
     private String instrucao;
     private boolean ativo;    
@@ -10,13 +10,15 @@ public class PromptRequestDTO {
     public PromptRequestDTO() {
     }
     
-    public String getDocumentoId() {
-        return this.documentoId;
+
+    public String getNome() {
+        return this.nome;
     }
 
-    public void setDocumentoId(String documentoId) {
-        this.documentoId = documentoId;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
+
 
     public String getNivel() {
         return this.nivel;

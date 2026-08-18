@@ -105,23 +105,30 @@ export class Breadcrumb implements OnInit {
   }
 
   private getLabelForUrl(url: string): string {
-    if (url === '/' || url === '/inicio') return 'Início';
-    if (url.includes('/painel')) return 'Painel da Disciplina';
-    if (url.includes('/gerenciamento')) return 'Gerenciamento RAG';
-    if (url.includes('/banco-questoes')) return 'Banco de Questões';
-    if (url.includes('/gerar-prova/automatico')) return 'Automático';
-    if (url.includes('/gerar-prova/rapida')) return 'Rápida';
-    if (url.includes('/gerar-prova/manual')) return 'Manual';
-    if (url.includes('/gerar-prova')) return 'Gerador de Prova';
-    if (url.includes('/provas-salvas')) return 'Provas Salvas';
-    if (url.includes('/alimentacao')) return 'Alimentação RAG';
+
+    const urlLimpa = url.split('?')[0];
+
+    if (urlLimpa === '/' || urlLimpa === '/inicio') return 'Início';
+    if (urlLimpa.includes('/painel')) return 'Painel da Disciplina';
+    if (urlLimpa.includes('/gerenciamento')) return 'Gerenciamento RAG';
+    if (urlLimpa.includes('/banco-questoes')) return 'Banco de Questões';
+    if (urlLimpa.includes('/gerar-prova/automatico')) return 'Automático';
+    if (urlLimpa.includes('/gerar-prova/rapida')) return 'Rápida';
+    if (urlLimpa.includes('/gerar-prova/manual')) return 'Manual';
+    if (urlLimpa.includes('/gerar-prova')) return 'Gerador de Prova';
+    if (urlLimpa.includes('/provas-salvas')) return 'Provas Salvas';
+    if (urlLimpa.includes('/alimentacao')) return 'Alimentação RAG';
+    if (urlLimpa.includes('/detalhe-prompt')) return 'Detalhes de Prompt'; 
     
-    const segments = url.split('/').filter(seg => seg !== '');
+    const segments = urlLimpa.split('/').filter(seg => seg !== '');
     const lastSegment = segments[segments.length - 1];
     if (lastSegment) {
       return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace(/-/g, ' ');
     }
     
     return '';
+    
   }
+
+
 }

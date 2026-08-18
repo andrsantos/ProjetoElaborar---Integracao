@@ -14,6 +14,7 @@ export class PromptService {
   constructor(private http: HttpClient) {}
 
   cadastrarPrompt(prompt: Prompt): Observable<Prompt> {
+    console.log("Prompt enviado: ", prompt);
     return this.http.post<Prompt>(this.apiUrl, prompt);
   }
 
@@ -23,6 +24,10 @@ export class PromptService {
 
   listarTodos(): Observable<Prompt[]> {
     return this.http.get<Prompt[]>(this.apiUrl);
+  }
+
+  buscarPorId(id: string): Observable<Prompt> {
+    return this.http.get<Prompt>(`${this.apiUrl}/${id}`);
   }
 
   atualizarPrompt(id: string, prompt: Prompt): Observable<Prompt> {

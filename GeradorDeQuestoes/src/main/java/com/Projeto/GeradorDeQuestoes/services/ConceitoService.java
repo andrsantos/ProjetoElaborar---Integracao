@@ -1,5 +1,6 @@
 package com.Projeto.GeradorDeQuestoes.services;
 
+import com.Projeto.GeradorDeQuestoes.dto.TaxonomiaDTO;
 import com.Projeto.GeradorDeQuestoes.entities.ConceitoEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 
@@ -28,6 +29,7 @@ public interface ConceitoService {
     List<String> gerarArvoreSemente(String nomeDisciplina, String descricaoDisciplina, UsuarioEntity usuario);
 
     ConceitoEntity salvarConceitoSemente(String nomeTopico, String disciplinaId);
-    
+
+    void sincronizarTaxonomia(String disciplinaId, TaxonomiaDTO taxonomiaDTO, UsuarioEntity usuario);    
 
 }

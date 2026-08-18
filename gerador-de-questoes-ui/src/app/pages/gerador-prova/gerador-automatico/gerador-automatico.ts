@@ -286,7 +286,6 @@ export class GeradorAutomatico implements OnInit {
 
   converterParaBancoQuestao(questao: any): BancoQuestao {
     return {
-      topico: questao.topico || "Geral",
       enunciado: questao.enunciado,
       tipo: "MULTIPLA_ESCOLHA_5",
       alternativas: {

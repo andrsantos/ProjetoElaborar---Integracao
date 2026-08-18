@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.Projeto.GeradorDeQuestoes.dto.PromptRequestDTO;
 import com.Projeto.GeradorDeQuestoes.dto.PromptResponseDTO;
-import com.Projeto.GeradorDeQuestoes.entities.DocumentosReferenciaEntity;
 import com.Projeto.GeradorDeQuestoes.entities.PromptEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.DocumentosReferenciaRepository;
 import com.Projeto.GeradorDeQuestoes.repositories.PromptRepository;
@@ -20,22 +19,18 @@ import jakarta.persistence.EntityNotFoundException;
 public class PromptServiceImpl implements PromptService {
 
     private final PromptRepository promptRepository;
-    private final DocumentosReferenciaRepository documentosRepository; 
 
-    public PromptServiceImpl(PromptRepository promptRepository, DocumentosReferenciaRepository documentosRepository) {
+    public PromptServiceImpl(PromptRepository promptRepository) {
         this.promptRepository = promptRepository;
-        this.documentosRepository = documentosRepository;
     }
 
     @Override
     @Transactional
     public PromptResponseDTO criar(PromptRequestDTO dto) {
-        DocumentosReferenciaEntity documento = documentosRepository.findById(dto.getDocumentoId())
-                .orElseThrow(() -> new EntityNotFoundException("Documento não encontrado com o ID: " + dto.getDocumentoId()));
 
         PromptEntity prompt = new PromptEntity();
-        prompt.setDocumento(documento); 
         prompt.setNivel(dto.getNivel());
+        prompt.setNome(dto.getNome());
         prompt.setInstrucao(dto.getInstrucao());
         prompt.setAtivo(dto.isAtivo());
 
@@ -45,13 +40,15 @@ public class PromptServiceImpl implements PromptService {
     }
 
     @Override
-    public List<PromptResponseDTO> listarPorDocumento(String documentoId) {
-        List<PromptEntity> prompts = promptRepository.findByDocumento_Id(documentoId);
+    public List<PromptResponseDTO> listarTodos() {
+        List<PromptEntity> prompts = promptRepository.findAll();
         
         return prompts.stream()
                 .map(this::converterParaDTO)
                 .collect(Collectors.toList());
     }
+
+
 
     @Override
     public PromptResponseDTO buscarPorId(String id) {
@@ -97,7 +94,7 @@ public class PromptServiceImpl implements PromptService {
     private PromptResponseDTO converterParaDTO(PromptEntity entity) {
         PromptResponseDTO dto = new PromptResponseDTO();
         dto.setId(entity.getId());
-        dto.setDocumentoId(entity.getDocumento().getId()); 
+        dto.setNome(entity.getNome());
         dto.setNivel(entity.getNivel());
         dto.setInstrucao(entity.getInstrucao());
         dto.setAtivo(entity.isAtivo());
