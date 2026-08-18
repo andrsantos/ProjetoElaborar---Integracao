@@ -9,8 +9,5 @@ import com.Projeto.GeradorDeQuestoes.entities.PromptEntity;
 
 public interface PromptRepository extends JpaRepository<PromptEntity, String> {
 
-    List<PromptEntity> findByDocumento_Id(String documentoId);
-    Optional<PromptEntity> findByDocumento_IdAndNivelAndAtivoTrue(String documentoId, String nivel);
-    void deleteByDocumentoIdIn(List<String> documentosIds);
     
 }

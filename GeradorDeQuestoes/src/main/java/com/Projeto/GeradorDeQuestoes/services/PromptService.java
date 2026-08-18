@@ -8,9 +8,7 @@ import com.Projeto.GeradorDeQuestoes.dto.PromptResponseDTO;
 public interface PromptService {
     
     PromptResponseDTO criar(PromptRequestDTO dto);
-    
-    List<PromptResponseDTO> listarPorDocumento(String documentoId);
-    
+
     PromptResponseDTO buscarPorId(String id);
     
     PromptResponseDTO atualizar(String id, PromptRequestDTO dto);
@@ -18,4 +16,7 @@ public interface PromptService {
     void alterarStatus(String id, boolean ativo);
     
     void deletar(String id);
+
+    List<PromptResponseDTO> listarTodos();
+    
 }

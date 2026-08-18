@@ -1,6 +1,6 @@
 export interface Prompt {
     id: string;
-    topico: string;
+    nome: string; 
     nivel: string;
     instrucao: string;
     ativo: boolean;

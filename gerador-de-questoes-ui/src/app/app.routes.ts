@@ -22,6 +22,8 @@ import { MenuGeracao } from './pages/gerador-prova/menu-geracao/menu-geracao';
 import { Login } from './pages/login/login';
 import { AuthGuard } from './guards/auth/auth-guard';
 import { QuestoesDocumento } from './pages/gerenciamento/questoes-documento/questoes-documento';
+import { EditarTaxonomia } from './pages/banco-dashboard/gerenciar-banco/editar-taxonomia/editar-taxonomia';
+import { Processamentos } from './pages/processamentos/processamentos';
 
 export const routes: Routes = [
   {
@@ -114,6 +116,13 @@ export const routes: Routes = [
     data: { breadcrumb: 'Gerenciar' }
   },
   {
+    path: 'banco-questoes/taxonomia',
+    component: EditarTaxonomia,
+    title: 'Taxonomia da Disciplina',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Taxonomia' }
+  },
+  {
     path: 'banco-questoes/novo',
     component: BancoQuestoes,
     title: 'Banco de Questões',
@@ -162,6 +171,13 @@ export const routes: Routes = [
     canActivate: [AuthGuard, DisciplinaGuard],
     data: { breadcrumb: 'Gerenciamento RAG' }
    },
+   {
+    path: 'processamentos',
+    component: Processamentos, 
+    title: 'Status dos Processamentos',
+    canActivate: [AuthGuard, DisciplinaGuard],
+    data: { breadcrumb: 'Processamentos' }
+  },
    { 
     path: 'gerenciamento/prova/:id/questoes', 
     component: QuestoesDocumento,

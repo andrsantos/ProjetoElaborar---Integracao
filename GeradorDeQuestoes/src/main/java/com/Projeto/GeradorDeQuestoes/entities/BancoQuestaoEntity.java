@@ -20,9 +20,6 @@ public class BancoQuestaoEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    @Column(nullable = false)
-    private String topico; 
-
     @Column(columnDefinition = "TEXT", nullable = false)
     private String enunciado;
 
@@ -90,8 +87,6 @@ public class BancoQuestaoEntity {
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
-    public String getTopico() { return topico; }
-    public void setTopico(String topico) { this.topico = topico; }
     public String getEnunciado() { return enunciado; }
     public void setEnunciado(String enunciado) { this.enunciado = enunciado; }
     public TipoQuestao getTipo() { return tipo; }

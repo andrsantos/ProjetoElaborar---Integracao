@@ -5,6 +5,10 @@ import { ToastrService } from 'ngx-toastr';
 import { BancoQuestao } from '../../../models/banco-questao.model';
 import { BancoQuestoesService } from '../../../services/banco-questoes/banco-questoes';
 import { FormsModule } from '@angular/forms';
+import { DocumentosService } from '../../../services/documentos/documentos-service';
+
+// Importando o serviço de Prompt
+import { PromptService } from '../../../services/prompts/prompt-service';
 
 @Component({
   selector: 'app-questoes-documento',
@@ -19,6 +23,8 @@ export class QuestoesDocumento implements OnInit {
   public questoes: BancoQuestao[] = [];
   public isLoading: boolean = true;
 
+  public nomePromptBanca: string = 'Padrão Geral';
+
   public paginaAtual: number = 1;
   public itensPorPagina: number = 5;
 
@@ -28,7 +34,9 @@ export class QuestoesDocumento implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private bancoQuestoesService: BancoQuestoesService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private documentosService: DocumentosService,
+    private promptService: PromptService 
   ) {}
 
   ngOnInit(): void {
@@ -36,10 +44,35 @@ export class QuestoesDocumento implements OnInit {
 
     if (this.provaId) {
       this.carregarQuestoes();
+      this.carregarDadosDaProva(); 
     } else {
       this.toastr.error('Identificador da prova não encontrado.', 'Erro de Rota');
       this.voltar();
     }
+  }
+
+  carregarDadosDaProva(): void {
+    this.documentosService.buscarArquivoPorId(this.provaId).subscribe({
+      next: (dtoArquivo) => {
+        if (dtoArquivo && dtoArquivo.promptId) {
+          this.buscarNomeDoPrompt(dtoArquivo.promptId);
+        }
+      },
+      error: (err) => {
+        console.warn('Não foi possível carregar os detalhes do arquivo:', err);
+      }
+    });
+  }
+
+  buscarNomeDoPrompt(promptId: string): void {
+    this.promptService.buscarPorId(promptId).subscribe({
+      next: (prompt) => {
+        if (prompt && prompt.nome) {
+          this.nomePromptBanca = prompt.nome;
+        }
+      },
+      error: (err) => console.warn('Não foi possível buscar o nome do prompt:', err)
+    });
   }
 
   carregarQuestoes(): void {
@@ -47,7 +80,6 @@ export class QuestoesDocumento implements OnInit {
     this.bancoQuestoesService.listarQuestoesDaProva(this.provaId).subscribe({
       next: (res) => {
         this.questoes = res || [];
-        console.log("Questoes", this.questoes);
         this.isLoading = false;
       },
       error: (err) => {
@@ -77,10 +109,8 @@ export class QuestoesDocumento implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-
   habilitarEdicao(questao: BancoQuestao): void {
     this.backupQuestao[questao.id!] = JSON.parse(JSON.stringify(questao));
-  
     questao['isEditing'] = true;
   }
 

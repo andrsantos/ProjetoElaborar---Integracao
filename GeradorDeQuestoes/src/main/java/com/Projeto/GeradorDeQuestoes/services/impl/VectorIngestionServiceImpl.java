@@ -211,7 +211,6 @@ public class VectorIngestionServiceImpl implements VectorIngestionService {
         metadata.put("conceito", questao.getConceito() != null ? questao.getConceito() : "Geral");
         metadata.put("nivel", questao.getNivel() != null ? questao.getNivel().name() : "NAO_INFORMADO");
         metadata.put("competencia", questao.getCompetencia() != null ? questao.getCompetencia() : "NAO_INFORMADO");
-        metadata.put("topico", questao.getTopico() != null ? questao.getTopico() : "Geral");
 
         if (questao.getArquivoOrigem() != null && questao.getArquivoOrigem().getId() != null) {
             metadata.put("documento_id", questao.getArquivoOrigem().getId().toString());

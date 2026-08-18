@@ -1,0 +1,123 @@
+<div class="processamentos-container">
+  
+  <header class="page-header">
+    <div class="header-content">
+      <div class="title-area">
+        <h1>Painel de Processamentos</h1>
+        <p class="subtitle">Acompanhe o status das requisições assíncronas e extrações da inteligência artificial.</p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <div class="toggle-group">
+        <span class="toggle-label">Auto-Atualizar (10s):</span>
+        <label class="switch">
+          <input type="checkbox" [checked]="autoRefreshAtivo" (change)="toggleAutoRefresh()">
+          <span class="slider round"></span>
+        </label>
+      </div>
+
+      <button type="button" class="btn-primary" (click)="atualizarManualmente()" [disabled]="isLoading">
+        <i class="fas" [ngClass]="isLoading ? 'fa-spinner fa-spin' : 'fa-sync-alt'"></i> Atualizar Agora
+      </button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    
+    <div class="loading-state" *ngIf="isLoading && jobs.length === 0">
+      <span class="loader"></span>
+      <p>Carregando histórico de processamentos...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!isLoading && jobs.length === 0">
+      <div class="empty-icon">
+        <i class="fas fa-server"></i>
+      </div>
+      <h2>Nenhum processamento encontrado</h2>
+      <p>Você ainda não enviou nenhum documento para a fila de extração de questões desta disciplina.</p>
+    </div>
+
+
+    <div class="table-container" *ngIf="jobs.length > 0">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th style="width: auto;">Arquivo Solicitado</th>
+            <th style="text-align: center; width: 15%;">Modo</th>
+            <th style="text-align: center; width: 15%;">Status</th>
+            <th style="text-align: center; width: 15%;">Iniciado Em</th>
+            <th style="text-align: center; min-width: 140px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr *ngFor="let job of jobs">
+            
+
+            <td>
+              <div class="file-cell">
+                <i class="fas fa-file-pdf pdf-icon"></i>
+                <span class="file-name">{{ job.nomeOriginal }}</span>
+              </div>
+            </td>
+            
+            <td style="text-align: center; color: #64748b; font-weight: 500;">
+              {{ job.modoExtracao }}
+            </td>
+
+            <td style="text-align: center;">
+              <span *ngIf="job.status === 'PENDING'" class="badge badge-warning">
+                <i class="fas fa-hourglass-half"></i> Na Fila
+              </span>
+              <span *ngIf="job.status === 'PROCESSING'" class="badge badge-info">
+                <i class="fas fa-cogs fa-spin"></i> Processando
+              </span>
+              <span *ngIf="job.status === 'COMPLETED'" class="badge badge-success">
+                <i class="fas fa-check-circle"></i> Concluído
+              </span>
+              <span *ngIf="job.status === 'PARCIALMENTE_CONCLUIDO'" class="badge badge-orange">
+                <i class="fas fa-exclamation-triangle"></i> Parcial
+              </span>
+              <span *ngIf="job.status === 'ERROR'" class="badge badge-danger">
+                <i class="fas fa-times-circle"></i> Falha
+              </span>
+            </td>
+
+            <td style="text-align: center; color: #64748b; font-size: 0.9rem;">
+              {{ job.dataCriacao | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+
+            <td style="text-align: center;">
+              <!-- O SEGREDO ESTÁ AQUI: Um container Flexbox para organizar os botões -->
+              <div class="action-buttons">
+                <button *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO'" 
+                        (click)="verQuestoes(job)" class="btn-action primary" title="Visualizar Questões">
+                  <i class="fas fa-list-ul"></i> <span>Ver Questões</span>
+                </button>
+
+                <button *ngIf="job.status === 'ERROR' || job.status === 'PARCIALMENTE_CONCLUIDO'" 
+                        (click)="verDetalhesErro(job)" class="btn-action danger outline" title="Detalhes do Erro">
+                  <i class="fas fa-info-circle"></i> <span>Detalhes</span>
+                </button>
+
+                <button *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO' || job.status === 'ERROR'" 
+                        (click)="deletarProcessamento(job)" 
+                        class="btn-action danger icon-only" 
+                        title="Apagar Processamento">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+
+                <span *ngIf="job.status === 'PENDING' || job.status === 'PROCESSING'" class="status-waiting">
+                  Aguardando...
+                </span>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+</div>

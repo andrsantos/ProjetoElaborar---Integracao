@@ -12,9 +12,7 @@ export type NivelTecnico =
 
 export interface BancoQuestao {
   id?: string; 
-  
-  topico: string;
-  
+    
   enunciado: string;
   
   tipo: TipoQuestao; 

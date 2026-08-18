@@ -11,6 +11,7 @@
       <button class="btn-outline" routerLink="/provas-salvas">Voltar</button>
       <button class="btn-deletar" (click)="openDeleteModal()">🗑️ Excluir Prova</button>
       <button class="btn-adicionar" (click)="abrirModalBuscaAvulsa()">+ Adicionar Questão</button>
+      <button class="btn-avaliar" (click)="exportarFormatoAvaliar()">Exportar Formato Avaliar</button>
       <button class="btn-primario" (click)="salvarProvaFinal()">
         <span *ngIf="!isSavingFinal">Salvar Versão Final</span>
         <span *ngIf="isSavingFinal" class="loader-small"></span>

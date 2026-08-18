@@ -259,7 +259,6 @@ public class ProvaSalvaController {
             novaQuestao.setCompetencia(questaoGerada.getCompetencia());
             novaQuestao.setDataCriacao(LocalDateTime.now());
             novaQuestao.setTipo(TipoQuestao.MULTIPLA_ESCOLHA_5);
-            novaQuestao.setTopico("Não Classificado");
             novaQuestao.setAlternativas(questaoGerada.getAlternativas());
             bancoQuestaoRepository.save(novaQuestao);
             return ResponseEntity.ok(novaQuestao);

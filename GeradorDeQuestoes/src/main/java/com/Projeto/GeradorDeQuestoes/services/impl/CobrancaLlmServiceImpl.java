@@ -18,9 +18,6 @@ import jakarta.transaction.Transactional;
 public class CobrancaLlmServiceImpl implements CobrancaLlmService {
 
     private final CarteiraRepository carteiraRepository;
-
-
-    // PREÇOS ATUALIZADOS - Cotação exata: Dólar a R$ 5,14
     
     // GPT-4o: US$ 2.50 / 1M input e US$ 10.00 / 1M output
     // Input: 2.50 * 5.14 / 1.000.000 = 0.00001285
@@ -34,11 +31,16 @@ public class CobrancaLlmServiceImpl implements CobrancaLlmService {
     // Output: 5.00 * 5.14 / 1.000.000 = 0.0000257
     private static final BigDecimal HAIKU_OUTPUT = new BigDecimal("0.0000257");
 
+    // NOVO: Claude 3.5 Sonnet: US$ 3.00 / 1M input e US$ 15.00 / 1M output
+    // Input: 3.00 * 5.14 / 1.000.000 = 0.00001542
+    private static final BigDecimal SONNET_INPUT = new BigDecimal("0.00001542");
+    // Output: 15.00 * 5.14 / 1.000.000 = 0.00007710
+    private static final BigDecimal SONNET_OUTPUT = new BigDecimal("0.00007710");
+
     public CobrancaLlmServiceImpl(CarteiraRepository carteiraRepository) {
         this.carteiraRepository = carteiraRepository;
     }
 
- 
     @Override
     @Transactional
     public void verificarSaldoMinimo(UsuarioEntity usuario) {
@@ -86,6 +88,9 @@ public class CobrancaLlmServiceImpl implements CobrancaLlmService {
         if (modelo != null && modelo.toLowerCase().contains("gpt-4o")) {
             precoInput = GPT4O_INPUT;
             precoOutput = GPT4O_OUTPUT;
+        } else if (modelo != null && modelo.toLowerCase().contains("sonnet")) {
+            precoInput = SONNET_INPUT;
+            precoOutput = SONNET_OUTPUT;
         } else if (modelo != null && modelo.toLowerCase().contains("haiku")) {
             precoInput = HAIKU_INPUT;
             precoOutput = HAIKU_OUTPUT;
@@ -99,5 +104,4 @@ public class CobrancaLlmServiceImpl implements CobrancaLlmService {
 
         return custoInput.add(custoOutput).setScale(6, RoundingMode.HALF_UP);
     }
-    
 }

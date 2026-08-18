@@ -7,12 +7,12 @@ import { BancoQuestao } from '../../../models/banco-questao.model';
 import { ProvaService } from '../../../services/prova/prova-service';
 import { DisciplinaContextService } from '../../../services/disciplina-context/disciplina-context-service';
 import { DisciplinaService } from '../../../services/disciplina/disciplina-service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-gerenciar-banco',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './gerenciar-banco.html',
   styleUrls: ['./gerenciar-banco.scss']
 })
@@ -63,7 +63,6 @@ export class GerenciarBanco implements OnInit {
 
   ngOnInit(): void {
     this.disciplinaAtivaId = this.contextService.getDisciplinaAtivaId();
-
     if (!this.disciplinaAtivaId) {
       if (isPlatformBrowser(this.platformId)) {
         this.toastr.error('Nenhuma disciplina selecionada. Retornando ao início.', 'Atenção');
@@ -136,9 +135,9 @@ export class GerenciarBanco implements OnInit {
   aplicarFiltros() {
     let resultado = [...this.questoes];
 
-    if (this.topicoSelecionado) {
-      resultado = resultado.filter(q => q.topico === this.topicoSelecionado);
-    }
+    // if (this.topicoSelecionado) {
+    //   resultado = resultado.filter(q => q.topico === this.topicoSelecionado);
+    // }
 
     if (this.conceitoSelecionado) {
       resultado = resultado.filter(q => q.conceito === this.conceitoSelecionado);
@@ -152,7 +151,7 @@ export class GerenciarBanco implements OnInit {
       const termo = this.searchTerm.toLowerCase();
       resultado = resultado.filter(q =>
         q.enunciado.toLowerCase().includes(termo) ||
-        q.topico.toLowerCase().includes(termo) ||
+        // q.topico.toLowerCase().includes(termo) ||
         (q.conceito && q.conceito.toLowerCase().includes(termo))
       );
     }

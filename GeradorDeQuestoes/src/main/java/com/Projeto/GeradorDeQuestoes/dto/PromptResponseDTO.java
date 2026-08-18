@@ -3,7 +3,7 @@ package com.Projeto.GeradorDeQuestoes.dto;
 public class PromptResponseDTO {
     
     private String id;
-    private String documentoId; 
+    private String nome; 
     private String nivel;
     private String instrucao;
     private boolean ativo;
@@ -11,16 +11,16 @@ public class PromptResponseDTO {
     public PromptResponseDTO() {
     }
 
-    public PromptResponseDTO(String documentoId, String nivel, String instrucao, boolean ativo) {
-        this.documentoId = documentoId;
+    public PromptResponseDTO(String nome, String nivel, String instrucao, boolean ativo) {
+        this.nome = nome;
         this.nivel = nivel;
         this.instrucao = instrucao;
         this.ativo = ativo;
     }
 
-    public PromptResponseDTO(String id, String documentoId, String nivel, String instrucao, boolean ativo) {
+    public PromptResponseDTO(String id, String nome, String nivel, String instrucao, boolean ativo) {
         this.id = id;
-        this.documentoId = documentoId;
+        this.nome = nome;
         this.nivel = nivel;
         this.instrucao = instrucao;
         this.ativo = ativo;
@@ -34,13 +34,14 @@ public class PromptResponseDTO {
         this.id = id;
     }
 
-    public String getDocumentoId() {
-        return this.documentoId;
+    public String getNome() {
+        return this.nome;
     }
 
-    public void setDocumentoId(String documentoId) {
-        this.documentoId = documentoId;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
+
      
     public String getNivel() {
         return this.nivel;

@@ -8,8 +8,15 @@
       <h2>Auditoria de Questões</h2>
       <p>Visualizando o resultado da extração da prova selecionada.</p>
     </div>
+    
     <div class="stats" *ngIf="!isLoading">
       <span class="badge">{{ questoes.length }} questões extraídas</span>
+      
+      <!-- EXIBIÇÃO DIRETA DA PROPRIEDADE -->
+      <span class="badge" style="background-color: #e0f2fe; color: #0369a1; margin-left: 10px;">
+        <i class="fas fa-id-badge" style="margin-right: 5px;"></i> Estilo: <strong>{{ nomePromptBanca }}</strong>
+      </span>
+      
     </div>
   </div>
 
@@ -24,10 +31,7 @@
     <p>A extração desta prova pode ter falhado ou as questões foram removidas.</p>
   </div>
 
-
-
   <div class="questoes-list" *ngIf="!isLoading && questoes.length > 0">
-
     <div class="questao-card" *ngFor="let questao of questoesPaginadas; let i = index">
       <div class="questao-header">
         <div class="info-grupo">
@@ -43,9 +47,6 @@
                    title="Digite a letra da resposta correta">
           </span>
 
-          <span class="questao-tag" *ngIf="questao.topico">
-            <i class="fas fa-tag"></i> {{ questao.topico }}
-          </span>
           <span class="questao-tag nivel" *ngIf="questao.nivel">
             {{ questao.nivel }}
           </span>
@@ -124,7 +125,6 @@
     </div>
 
   </div>
-
 
   <!-- Controles de Paginação -->
   <div class="paginacao-container" *ngIf="!isLoading && questoes.length > itensPorPagina">

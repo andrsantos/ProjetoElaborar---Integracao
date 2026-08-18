@@ -170,10 +170,6 @@ public class GerenciamentoServiceImpl implements GerenciamentoService {
         DocumentosReferenciaEntity documento = documentosReferenciaRepository.findById(documentoId)
                 .orElseThrow(() -> new EntityNotFoundException("Documento não encontrado com o ID: " + documentoId));
 
-        List<PromptEntity> promptsVinculados = promptRepository.findByDocumento_Id(documentoId);
-        if (!promptsVinculados.isEmpty()) {
-            promptRepository.deleteAll(promptsVinculados);
-        }
 
         try {
             vectorStoreRepository.deleteByDocumentoId(documentoId);

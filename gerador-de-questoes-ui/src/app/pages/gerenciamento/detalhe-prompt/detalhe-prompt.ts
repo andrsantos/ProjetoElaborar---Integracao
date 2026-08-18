@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
-import { Prompt } from '../../../models/prompt.model';
 import { PromptService } from '../../../services/prompts/prompt-service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
@@ -15,14 +14,10 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 })
 export class DetalhePrompt implements OnInit {
   
-  documentoId: string = '';
-  prompts: Prompt[] = [];
-  isLoading: boolean = true;
-
-  isFormOpen: boolean = false;
+  isLoading: boolean = true; 
   isSaving: boolean = false;
   promptForm!: FormGroup;
-  idPromptEmEdicao: string | null = null;
+  promptId: string | null = null; 
   
   constructor(
     private route: ActivatedRoute,
@@ -32,65 +27,48 @@ export class DetalhePrompt implements OnInit {
   ) {}
 
   ngOnInit(): void {
+
     this.promptForm = this.fb.group({
-      nivel: ['', Validators.required],
+      nome: ['', Validators.required],
+      nivel: [''],
       instrucao: ['', [Validators.required, Validators.minLength(20)]],
       ativo: [true] 
     });
 
     this.route.queryParamMap.subscribe(params => {
-      this.documentoId = params.get('documentoId') || '';
+      this.promptId = params.get('promptId');
       
-      if (this.documentoId) {
-        this.carregarPrompts();
+      if (this.promptId) {
+        this.carregarPromptPorId(this.promptId);
       } else {
-        console.warn("Nenhum documento fornecido na URL. Retornando ao painel.");
-        this.voltarParaPainel();
+        this.isLoading = false;
       }
     });
   }
 
-  carregarPrompts(): void {
+  carregarPromptPorId(id: string): void {
       this.isLoading = true;
-      this.promptService.listarPromptsPorDocumento(this.documentoId)
+      this.promptService.buscarPorId(id)
         .pipe(finalize(() => this.isLoading = false))
         .subscribe({
-          next: (data) => this.prompts = data,
-          error: (err) => console.error('Erro ao buscar os prompts:', err)
+          next: (prompt) => {
+            this.promptForm.patchValue({
+              nome: prompt.nome,
+              nivel: prompt.nivel,
+              instrucao: prompt.instrucao,
+              ativo: prompt.ativo
+            });
+          },
+          error: (err) => {
+            console.error('Erro ao buscar o prompt:', err);
+            alert('Não foi possível carregar os detalhes do padrão.');
+            this.voltarParaPainel();
+          }
         });
   }
     
   voltarParaPainel(): void {
     this.router.navigate(['/gerenciamento']);
-  }
-
-  abrirFormularioNovo(): void {
-      this.idPromptEmEdicao = null; 
-      this.promptForm.reset({ ativo: true, nivel: '' }); 
-      this.isFormOpen = true; 
-  }
-
-  abrirFormularioEdicao(prompt: Prompt): void {
-    if (!prompt.id) return;
-    
-    this.idPromptEmEdicao = prompt.id; 
-    
-    this.promptForm.patchValue({
-      nivel: prompt.nivel,
-      instrucao: prompt.instrucao,
-      ativo: prompt.ativo
-    });
-    
-    this.isFormOpen = true; 
-  }
-
-  cancelarFormulario(): void {
-    this.isFormOpen = false;
-    this.idPromptEmEdicao = null;
-  }
-
-  cancelarNovo(): void {
-    this.isFormOpen = false; 
   }
 
   salvarPrompt(): void {
@@ -100,91 +78,35 @@ export class DetalhePrompt implements OnInit {
     }
 
     this.isSaving = true;
-    
-    const dadosFormulario = {
-      ...this.promptForm.value,
-      documentoId: this.documentoId
-    };
+    const dadosFormulario = this.promptForm.value;
 
-    if (this.idPromptEmEdicao) {
-      this.promptService.editarPrompt(this.idPromptEmEdicao, dadosFormulario)
+    if (this.promptId) {
+      console.log("Dados Formulário", dadosFormulario);
+      this.promptService.editarPrompt(this.promptId, dadosFormulario)
         .pipe(finalize(() => this.isSaving = false))
         .subscribe({
-          next: (promptAtualizado) => {
-            const index = this.prompts.findIndex(p => p.id === promptAtualizado.id);
-            if (index !== -1) {
-              this.prompts[index] = promptAtualizado;
-            }
-            this.aplicarRegraHighlanderVisual(promptAtualizado); 
-            this.cancelarFormulario();
+          next: () => {
+            this.voltarParaPainel();
           },
-          error: (err) => console.error('Erro ao editar:', err)
+          error: (err) => {
+            console.error('Erro ao editar prompt:', err);
+            alert('Erro ao salvar as alterações.');
+          }
         });
-
     } else {
+      console.log("Dados Formulário", dadosFormulario);
       this.promptService.cadastrarPrompt(dadosFormulario)
         .pipe(finalize(() => this.isSaving = false))
         .subscribe({
-          next: (promptCriado) => {
-            this.prompts.unshift(promptCriado);
-            this.aplicarRegraHighlanderVisual(promptCriado); 
-            this.cancelarFormulario();
+          next: () => {
+            this.voltarParaPainel();
           },
-          error: (err) => console.error('Erro ao salvar:', err)
+          error: (err) => {
+            console.error('Erro ao salvar prompt:', err);
+            alert('Erro ao criar o padrão.');
+          }
         });
     }
   }
-
-  private aplicarRegraHighlanderVisual(promptAtivo: Prompt): void {
-    if (promptAtivo.ativo) {
-      this.prompts.forEach(p => {
-        if (p.nivel === promptAtivo.nivel && p.id !== promptAtivo.id) {
-          p.ativo = false;
-        }
-      });
-    }
-  }
-
-  deletarPrompt(prompt: Prompt): void {
-    const confirmacao = confirm(`Atenção: Tem certeza que deseja excluir esta instrução do nível ${prompt.nivel}? Essa ação não pode ser desfeita.`);
-    
-    if (confirmacao && prompt.id) {
-      this.promptService.deletarPrompt(prompt.id).subscribe({
-        next: () => {
-          this.prompts = this.prompts.filter(p => p.id !== prompt.id);
-        },
-        error: (err) => {
-          console.error('Erro ao excluir prompt:', err);
-          alert('Não foi possível excluir o prompt. Verifique os logs.');
-        }
-      });
-    }
-  }
-
-
-  alternarStatus(prompt: Prompt): void {
-    if (!prompt.id) return;
-
-    const novoStatus = !prompt.ativo;
-
-    this.promptService.alternarStatusPrompt(prompt.id, novoStatus).subscribe({
-      next: () => {
-        prompt.ativo = novoStatus;
-        
-        if (novoStatus) {
-          this.prompts.forEach(p => {
-            if (p.nivel === prompt.nivel && p.id !== prompt.id) {
-              p.ativo = false;
-            }
-          });
-        }
-      },
-      error: (err) => {
-        console.error('Erro ao alterar status do prompt:', err);
-        alert('Não foi possível alterar o status. Verifique os logs.');
-      }
-    });
-  }
-
 
 }
