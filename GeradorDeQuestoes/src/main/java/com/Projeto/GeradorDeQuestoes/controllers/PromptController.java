@@ -44,6 +44,12 @@ public class PromptController {
         return ResponseEntity.ok(prompts);
     }
 
+    @GetMapping("/disciplina/{disciplinaId}")
+    public ResponseEntity<List<PromptResponseDTO>> listarPorDisciplina(@PathVariable String disciplinaId) {
+        List<PromptResponseDTO> prompts = promptService.listarPorDisciplina(disciplinaId);
+        return ResponseEntity.ok(prompts);
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<PromptResponseDTO> buscarPromptPorId(@PathVariable String id) {

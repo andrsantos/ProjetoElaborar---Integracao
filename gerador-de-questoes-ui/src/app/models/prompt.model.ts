@@ -4,4 +4,6 @@ export interface Prompt {
     nivel: string;
     instrucao: string;
     ativo: boolean;
+    isPadrao: boolean;
+    disciplinaId: string;
 }

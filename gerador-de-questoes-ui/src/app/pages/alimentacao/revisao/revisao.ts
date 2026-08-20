@@ -10,6 +10,7 @@ import { BancoQuestoesService } from '../../../services/banco-questoes/banco-que
 import { BancoQuestao } from '../../../models/banco-questao.model';
 import { DisciplinaContextService } from '../../../services/disciplina-context/disciplina-context-service';
 import { ProvaService } from '../../../services/prova/prova-service';
+import { JobService } from '../../../services/job/job-service';
 
 export type CampoEdicao = 'enunciado' | 'resposta' | 'a' | 'b' | 'c' | 'd' | 'e';
 
@@ -45,6 +46,7 @@ export class Revisao implements OnInit, OnDestroy {
     private alimentacaoService: AlimentacaoService,
     private bancoQuestoesService: BancoQuestoesService,
     private toastr: ToastrService,
+    private jobService: JobService,
     private contextService: DisciplinaContextService,
     private provaService: ProvaService,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -183,21 +185,42 @@ export class Revisao implements OnInit, OnDestroy {
       questoes: questoesParaSalvar
     };
 
+
     this.bancoQuestoesService.cadastrarLote(payload).subscribe({
-      next: (questoesSalvasNoBanco) => {
-        if (this.criarProvaRapida) {
-          this.gerarEFinalizarProvaRapida(questoesSalvasNoBanco);
-        } else {
-          this.toastr.success(`${questoesParaSalvar.length} questões cadastradas com sucesso!`);
+    next: (questoesSalvasNoBanco) => {
+      
+      this.jobService.consolidarJob(this.jobId).subscribe({
+        
+        next: () => {
+          if (this.criarProvaRapida) {
+            this.gerarEFinalizarProvaRapida(questoesSalvasNoBanco);
+          } else {
+            this.toastr.success(`${questoesParaSalvar.length} questões cadastradas e processamento finalizado!`);
+            this.isSalvando = false;
+            this.router.navigate(['/banco-questoes']);
+          }
+        },
+        
+        error: (err) => {
+          console.error('Erro ao consolidar o job:', err);
+          this.toastr.warning('Questões salvas, mas houve um atraso ao atualizar o status do painel.');
           this.isSalvando = false;
-          this.router.navigate(['/banco-questoes']); 
+          
+          if (this.criarProvaRapida) {
+            this.gerarEFinalizarProvaRapida(questoesSalvasNoBanco);
+          } else {
+            this.router.navigate(['/banco-questoes']);
+          }
         }
-      },
-      error: () => {
-        this.toastr.error('Erro ao salvar o lote de questões.');
-        this.isSalvando = false;
-      }
-    });
+      });
+
+    },
+    error: () => {
+      this.toastr.error('Erro ao salvar o lote de questões.');
+      this.isSalvando = false;
+    }
+  });
+
   }
 
   private gerarEFinalizarProvaRapida(questoes: BancoQuestao[]): void {

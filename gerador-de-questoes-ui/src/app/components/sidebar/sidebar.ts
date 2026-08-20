@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router'; 
 import { DisciplinaContextService } from '../../services/disciplina-context/disciplina-context-service';
 import { DisciplinaService } from '../../services/disciplina/disciplina-service';
+import { JobNotificationService } from '../../services/job-notification/job-notification-service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,13 +13,14 @@ import { DisciplinaService } from '../../services/disciplina/disciplina-service'
   templateUrl: './sidebar.html',
   styleUrls: ['./sidebar.scss']
 })
-export class Sidebar implements OnInit {
+export class Sidebar implements OnInit, OnDestroy {
   
   temDisciplinaAtiva = false;
-  nomeDisciplinaAtiva = ''; 
+  nomeDisciplinaAtiva = '';
+  private notificationSub?: Subscription; 
 
   linksInativos = [
-    { path: '/', label: 'Início', exact: true }
+    { path: '/', label: 'Início', exact: true, icon: 'fas fa-home' }
   ];
 
   linksExibidos: any[] = [];
@@ -25,26 +28,29 @@ export class Sidebar implements OnInit {
   constructor(
     private contextService: DisciplinaContextService,
     private disciplinaService: DisciplinaService,
-    private router: Router 
+    private router: Router,
+    private notificationService: JobNotificationService
   ) {}
+
 
   ngOnInit() {
     this.linksExibidos = this.linksInativos;
+
+    this.notificationService.iniciarMonitoramento();
 
     this.contextService.getDisciplinaAtivaIdObservable().subscribe(id => {
       this.temDisciplinaAtiva = !!id; 
       
       if (id) {
         this.linksExibidos = [
-          { path: '/', label: '⬅ Voltar para o início', exact: true, isExit: true },
-          { path: `/painel/${id}`, label: 'Painel da Disciplina', exact: true }, 
-          { path: '/gerenciamento', label: 'Gerenciamento', exact: false },
-          { path: '/gerar-prova', label: 'Geração', exact: false },
-          { path: '/banco-questoes', label: 'Banco de Questões', exact: false },
-          { path: '/provas-salvas', label: 'Provas Salvas', exact: false },
-          { path: '/alimentacao', label: 'Extração de Questões', exact: false },
-          { path: '/processamentos', label: 'Menu de Processamentos', exact: false },
-
+          { path: '/', label: 'Voltar para o início', exact: true, isExit: true, icon: 'fas fa-arrow-left' },
+          { path: `/painel/${id}`, label: 'Painel da Disciplina', exact: true, icon: 'fas fa-chart-line' }, 
+          { path: '/gerenciamento', label: 'Gerenciamento', exact: false, icon: 'fas fa-sliders-h' },
+          { path: '/gerar-prova', label: 'Geração', exact: false, icon: 'fas fa-magic' },
+          { path: '/banco-questoes', label: 'Banco de Questões', exact: false, icon: 'fas fa-database' },
+          { path: '/provas-salvas', label: 'Provas Salvas', exact: false, icon: 'fas fa-file-pdf' },
+          { path: '/alimentacao', label: 'Extração de Questões', exact: false, icon: 'fas fa-robot' },
+          { path: '/processamentos', label: 'Processamentos', exact: false, icon: 'fas fa-tasks', hasNotification: false }
         ];
 
         this.disciplinaService.buscarNomeDisciplina(id).subscribe({
@@ -56,6 +62,20 @@ export class Sidebar implements OnInit {
         this.linksExibidos = this.linksInativos;
       }
     });
+
+    this.notificationSub = this.notificationService.hasNotification$.subscribe(temNotificacao => {
+      const linkProcessamento = this.linksExibidos.find(l => l.path === '/processamentos');
+      if (linkProcessamento) {
+        linkProcessamento.hasNotification = temNotificacao;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.notificationService.pararMonitoramento();
+    if (this.notificationSub) {
+      this.notificationSub.unsubscribe();
+    }
   }
 
   lidarComClique(link: any, event: Event) {

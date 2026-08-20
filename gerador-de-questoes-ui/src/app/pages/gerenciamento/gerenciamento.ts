@@ -124,8 +124,16 @@ export class Gerenciamento implements OnInit {
   }
 
 
+
   buscarPrompts(): void {
-    this.promptService.listarTodos().subscribe({
+    if (!this.disciplinaAtivaId) {
+      console.warn('Tentativa de buscar prompts sem uma disciplina ativa.');
+      this.toastr.warning('Nenhuma disciplina selecionada.');
+      this.isSearching = false;
+      return; 
+    }
+
+    this.promptService.listarPorDisciplina(this.disciplinaAtivaId).subscribe({
       next: (prompts) => {
         this.listaPrompts = prompts;
       },
@@ -322,7 +330,15 @@ export class Gerenciamento implements OnInit {
   }
 
   buscarProvasBaseConhecimento(): void {
-    this.pdfQuestaoService.listarProvas().subscribe({
+
+    if (!this.disciplinaAtivaId) {
+      console.warn('Tentativa de buscar provas sem uma disciplina ativa.');
+      this.toastr.warning('Nenhuma disciplina selecionada.');
+      this.isSearching = false;
+      return; 
+    }
+    
+    this.pdfQuestaoService.listarProvasResumo(this.disciplinaAtivaId).subscribe({
       next: (provas) => {
         this.listaProvas = provas;
       },

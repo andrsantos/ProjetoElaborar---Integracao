@@ -68,10 +68,11 @@ public class GerenciamentoController {
         this.pdfQuestaoService = pdfQuestaoService;
     }
 
-    @GetMapping("/listar/provas")
-    public ResponseEntity<?> listarProvasResumo() {
-        System.out.println("Buscando resumo de todas as provas cadastradas...");
-        return ResponseEntity.ok(pdfQuestaoService.buscarTodosResumos());
+
+    @GetMapping("/listar/provas/{disciplinaId}")
+    public ResponseEntity<?> listarProvasResumo(@PathVariable String disciplinaId) {
+        System.out.println("Buscando resumo das provas para a disciplina: " + disciplinaId);
+        return ResponseEntity.ok(pdfQuestaoService.buscarResumosPorDisciplina(disciplinaId));
     }
 
     @GetMapping("/download-prova/{id}")

@@ -204,6 +204,9 @@ public class BancoQuestaoController {
         System.out.println("Total de questões: " + (payload.getQuestoes() != null ? payload.getQuestoes().size() : 0));
         System.out.println("==================================");
 
+        String disciplinaId = payload.getQuestoes().get(0).getDisciplinaId();
+        System.out.println("Disciplina ID: " + disciplinaId);
+
         try {
             PdfQuestaoEntity pdfSalvo = null;
 
@@ -222,6 +225,7 @@ public class BancoQuestaoController {
                         novoPdf.setNomeArmazenamento(UUID.randomUUID() + "_" + job.getNomeArquivo());
                         novoPdf.setConteudo(Files.readAllBytes(caminhoTemp));
                         novoPdf.setContentType("application/pdf");
+                        novoPdf.setDisciplinaId(disciplinaId);
                         novoPdf.setTamanhoBytes(Files.size(caminhoTemp));
                      
                         pdfSalvo = pdfQuestaoRepository.save(novoPdf);

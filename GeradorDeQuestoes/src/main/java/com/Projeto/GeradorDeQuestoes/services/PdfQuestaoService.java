@@ -13,6 +13,7 @@ public interface PdfQuestaoService {
     PdfQuestaoEntity buscarPorId(UUID id);
     void deletarPorId(UUID id);
     List<BancoQuestaoEntity> buscarQuestoesPorProvaId(UUID provaId);
+    List<PdfQuestaoResumoDTO> buscarResumosPorDisciplina(String disciplinaId);
     
     
 }

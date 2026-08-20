@@ -4,5 +4,7 @@ export interface JobResumo {
   nomeOriginal: string;
   modoExtracao: string;
   mensagemErro: string;
+  tipo: string; 
   dataCriacao: string;
+  visualizado: boolean;
 }

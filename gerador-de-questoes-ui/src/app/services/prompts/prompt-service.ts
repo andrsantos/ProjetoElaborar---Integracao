@@ -26,6 +26,10 @@ export class PromptService {
     return this.http.get<Prompt[]>(this.apiUrl);
   }
 
+  listarPorDisciplina(disciplinaId: string): Observable<Prompt[]> {
+    return this.http.get<Prompt[]>(`${this.apiUrl}/disciplina/${disciplinaId}`);
+  }
+
   buscarPorId(id: string): Observable<Prompt> {
     return this.http.get<Prompt>(`${this.apiUrl}/${id}`);
   }

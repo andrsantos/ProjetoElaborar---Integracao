@@ -36,6 +36,9 @@ public class ExtracaoJobEntity {
     @Column(name = "caminho_arquivo_temporario")
     private String caminhoArquivoTemporario;
 
+    @Column(name = "visualizado", nullable = false)
+    private boolean visualizado = false;
+
     public ExtracaoJobEntity() {
         this.dataCriacao = LocalDateTime.now();
     }
@@ -109,5 +112,19 @@ public class ExtracaoJobEntity {
     public void setCaminhoArquivoTemporario(String caminhoArquivoTemporario) {
         this.caminhoArquivoTemporario = caminhoArquivoTemporario;
     }
+
+
+    public boolean isVisualizado() {
+        return this.visualizado;
+    }
+
+    public boolean getVisualizado() {
+        return this.visualizado;
+    }
+
+    public void setVisualizado(boolean visualizado) {
+        this.visualizado = visualizado;
+    }
+
 
 }

@@ -25,6 +25,9 @@ export class PdfquestaoService {
     return this.http.get<PdfQuestaoResumo[]>(`${this.API_URL}/listar/provas`);
   }
 
+  listarProvasResumo(disciplinaId: string): Observable<any> {
+    return this.http.get(`${this.API_URL}/listar/provas/${disciplinaId}`);
+  }
 
   baixarProva(id: string): Observable<Blob> {
     return this.http.get(`${this.API_URL}/download-prova/${id}`, { responseType: 'blob' });

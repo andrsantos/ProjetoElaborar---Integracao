@@ -38,6 +38,33 @@
       <p>Você ainda não enviou nenhum documento para a fila de extração de questões desta disciplina.</p>
     </div>
 
+    <!-- BARRA DE CONTROLES E FILTROS -->
+    <div class="table-controls" *ngIf="jobs.length > 0">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" 
+               [(ngModel)]="filtroTermo" 
+               (ngModelChange)="resetarPagina()" 
+               placeholder="Buscar arquivo ou operação...">
+      </div>
+      
+      <div class="filter-box">
+        <select [(ngModel)]="statusFiltro" (ngModelChange)="resetarPagina()">
+          <option value="TODOS">Todos os Status</option>
+          <option value="COMPLETED">Concluídos</option>
+          <option value="CONSOLIDADO">Integrados (Banco)</option>
+          <option value="PROCESSING">Processando</option>
+          <option value="ERROR">Com Falha</option>
+        </select>
+  
+        <select [(ngModel)]="ordenacao" (ngModelChange)="resetarPagina()">
+          <option value="dataCriacao_desc">Mais Recentes Primeiro</option>
+          <option value="dataCriacao_asc">Mais Antigos Primeiro</option>
+          <option value="nome_asc">Ordem Alfabética (A-Z)</option>
+        </select>
+      </div>
+    </div>
+
 
     <div class="table-container" *ngIf="jobs.length > 0">
       <table class="admin-table">
@@ -52,13 +79,27 @@
         </thead>
         <tbody>
 
-          <tr *ngFor="let job of jobs">
+          <!-- LAÇO PARA jobsPaginados -->
+          <tr *ngFor="let job of jobsPaginados">
             
-
             <td>
-              <div class="file-cell">
-                <i class="fas fa-file-pdf pdf-icon"></i>
-                <span class="file-name">{{ job.nomeOriginal }}</span>
+              <div [ngSwitch]="job.tipo">
+                
+                <div *ngSwitchCase="'EXTRACAO_PROVA'" class="file-cell">
+                  <i class="fas fa-file-pdf pdf-icon"></i>
+                  <span class="file-name">{{ job.nomeOriginal }}</span>
+                </div>
+                
+                <div *ngSwitchCase="'EDICAO_TAXONOMIA'" class="file-cell">
+                  <i class="fas fa-sitemap" style="color: #8b5cf6;"></i>
+                  <span class="file-name">Atualização de Taxonomia</span>
+                </div>
+
+                <div *ngSwitchDefault class="file-cell">
+                  <i class="fas fa-tasks" style="color: #64748b;"></i>
+                  <span class="file-name">{{ job.nomeOriginal || 'Processamento Geral' }}</span>
+                </div>
+
               </div>
             </td>
             
@@ -82,6 +123,9 @@
               <span *ngIf="job.status === 'ERROR'" class="badge badge-danger">
                 <i class="fas fa-times-circle"></i> Falha
               </span>
+              <span *ngIf="job.status === 'CONSOLIDADO'" class="badge badge-purple">
+                <i class="fas fa-database"></i> Integrado
+              </span>
             </td>
 
             <td style="text-align: center; color: #64748b; font-size: 0.9rem;">
@@ -89,35 +133,129 @@
             </td>
 
             <td style="text-align: center;">
-              <!-- O SEGREDO ESTÁ AQUI: Um container Flexbox para organizar os botões -->
               <div class="action-buttons">
-                <button *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO'" 
-                        (click)="verQuestoes(job)" class="btn-action primary" title="Visualizar Questões">
-                  <i class="fas fa-list-ul"></i> <span>Ver Questões</span>
-                </button>
+                
+                <ng-container *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO'">
+                  
+                  <button *ngIf="job.tipo === 'EXTRACAO_PROVA' || !job.tipo" 
+                          (click)="verQuestoes(job)" class="btn-action primary" title="Visualizar Questões">
+                    <i class="fas fa-list-ul"></i> <span>Ver Questões</span>
+                  </button>
 
+                  <button *ngIf="job.tipo === 'EDICAO_TAXONOMIA'" 
+                          (click)="abrirModalTaxonomia(job)" class="btn-action primary" title="Ver Nova Taxonomia">
+                    <i class="fas fa-sitemap"></i> <span>Ver Resumo</span>
+                  </button>
+
+                </ng-container>
+                
                 <button *ngIf="job.status === 'ERROR' || job.status === 'PARCIALMENTE_CONCLUIDO'" 
                         (click)="verDetalhesErro(job)" class="btn-action danger outline" title="Detalhes do Erro">
                   <i class="fas fa-info-circle"></i> <span>Detalhes</span>
                 </button>
 
-                <button *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO' || job.status === 'ERROR'" 
+                <button *ngIf="job.status === 'COMPLETED' || job.status === 'PARCIALMENTE_CONCLUIDO' || job.status === 'ERROR' || job.status === 'CONSOLIDADO'" 
                         (click)="deletarProcessamento(job)" 
                         class="btn-action danger icon-only" 
-                        title="Apagar Processamento">
+                        title="Apagar Histórico">
                   <i class="fas fa-trash-alt"></i>
                 </button>
 
                 <span *ngIf="job.status === 'PENDING' || job.status === 'PROCESSING'" class="status-waiting">
                   Aguardando...
                 </span>
+
               </div>
             </td>
 
           </tr>
+
+          <!-- MENSAGEM CASO O FILTRO NÃO ENCONTRE NADA -->
+          <tr *ngIf="jobsPaginados.length === 0">
+            <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">
+              <i class="fas fa-filter" style="font-size: 1.5rem; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
+              Nenhum processamento corresponde aos filtros aplicados.
+            </td>
+          </tr>
+
         </tbody>
       </table>
     </div>
 
+    <!-- CONTROLES DE PAGINAÇÃO -->
+    <div class="pagination-controls" *ngIf="jobs.length > 0 && totalPaginas > 1">
+      <button class="btn-page" (click)="mudarPagina(false)" [disabled]="paginaAtual === 1">
+        <i class="fas fa-chevron-left"></i> Anterior
+      </button>
+      
+      <span class="page-info">Página <strong>{{ paginaAtual }}</strong> de {{ totalPaginas }}</span>
+      
+      <button class="btn-page" (click)="mudarPagina(true)" [disabled]="paginaAtual === totalPaginas">
+        Próxima <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
   </main>
+</div>
+
+<!-- MODAL DE TAXONOMIA -->
+<div class="modal-overlay" *ngIf="isModalTaxonomiaOpen" (click)="fecharModalTaxonomia()">
+    
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <div class="modal-title-area">
+          <i class="fas fa-sitemap" style="color: #8b5cf6;"></i>
+          <h2>Resumo da Recatalogação</h2>
+        </div>
+        <button class="btn-close" (click)="fecharModalTaxonomia()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        
+        <div class="info-grid">
+          <div class="info-card">
+            <span class="info-label">Disciplina</span>
+            <span class="info-value">{{ nomeDisciplina }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-label">Data da Operação</span>
+            <span class="info-value">{{ jobSelecionado?.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</span>
+          </div>
+          <div class="info-card">
+            <span class="info-label">Status Final</span>
+            <span class="badge badge-success" style="font-size: 0.8rem;">
+              <i class="fas fa-check-circle"></i> {{ jobSelecionado?.status }}
+            </span>
+          </div>
+        </div>
+
+        <div class="taxonomia-section">
+          <h3>Nova Estrutura Aplicada</h3>
+          
+          <div *ngIf="isLoadingDetalhes" class="loading-taxonomia">
+            <i class="fas fa-circle-notch fa-spin"></i> Carregando dados do banco...
+          </div>
+
+          <div *ngIf="!isLoadingDetalhes" class="taxonomia-content">
+            <pre *ngIf="detalhesJobCompleto?.resultadoJson" class="json-viewer">{{ detalhesJobCompleto.resultadoJson }}</pre>
+            
+            <div *ngIf="!detalhesJobCompleto?.resultadoJson" class="empty-taxonomia">
+              <i class="fas fa-code-branch"></i>
+              <p>Os detalhes estruturais não foram salvos no registro deste processamento.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" style="width: 100%; justify-content: center;" (click)="fecharModalTaxonomia()">
+          Fechar Resumo
+        </button>
+      </div>
+
+    </div>
 </div>

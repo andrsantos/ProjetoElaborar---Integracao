@@ -7,6 +7,8 @@ public class PromptResponseDTO {
     private String nivel;
     private String instrucao;
     private boolean ativo;
+    private String disciplinaId;
+    private boolean isPadrao;
 
     public PromptResponseDTO() {
     }
@@ -25,6 +27,28 @@ public class PromptResponseDTO {
         this.instrucao = instrucao;
         this.ativo = ativo;
     }
+
+        public boolean isIsPadrao() {
+        return this.isPadrao;
+    }
+
+    public boolean getIsPadrao() {
+        return this.isPadrao;
+    }
+
+    public void setIsPadrao(boolean isPadrao) {
+        this.isPadrao = isPadrao;
+    }
+
+
+    public String getDisciplinaId() {
+        return this.disciplinaId;
+    }
+
+    public void setDisciplinaId(String disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
 
     public String getId() {
         return this.id;

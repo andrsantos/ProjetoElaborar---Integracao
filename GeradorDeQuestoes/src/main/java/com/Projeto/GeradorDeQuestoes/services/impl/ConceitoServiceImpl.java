@@ -138,7 +138,8 @@ public class ConceitoServiceImpl implements ConceitoService {
         }
 
         if (taxonomiaDTO.getTopicos() != null && !taxonomiaDTO.getTopicos().isEmpty()) {
-            bancoQuestaoService.reorganizarBancoAssincrono(disciplinaId, taxonomiaDTO.getTopicos(), usuario);
+            String jobId = UUID.randomUUID().toString();
+            bancoQuestaoService.reorganizarBancoAssincrono(disciplinaId, taxonomiaDTO.getTopicos(), usuario, jobId);
         }
     }
 

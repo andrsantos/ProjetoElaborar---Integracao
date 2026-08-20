@@ -15,7 +15,6 @@ public interface BancoQuestaoService {
     String normalizarConceito(String enunciado, String conceitoSugerido, List<String> conceitosExistentes, UsuarioEntity usuario);
     List<String> listarConceitosPorDisciplina(String disciplinaId);
     List<ClassificacaoLoteDTO> normalizarConceitosEmLote(String questoesJson, List<String> conceitosExistentes, UsuarioEntity usuario);
-    void reorganizarBancoAssincrono(String disciplinaId, List<String> novaTaxonomia, UsuarioEntity usuario);
-
+    void reorganizarBancoAssincrono(String disciplinaId, List<String> novaTaxonomia, UsuarioEntity usuario, String jobId);
     
 }
