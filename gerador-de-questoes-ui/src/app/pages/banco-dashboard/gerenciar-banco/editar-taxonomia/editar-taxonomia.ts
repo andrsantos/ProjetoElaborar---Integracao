@@ -146,7 +146,7 @@ export class EditarTaxonomia implements OnInit {
 
     this.conceitoService.sincronizarTaxonomia(this.disciplinaAtivaId, this.taxonomia).subscribe({
       next: () => {
-        this.toastr.success('Taxonomia salva! O Agente iniciará a recatalogação em background.');
+        this.toastr.success('Taxonomia salva! O Agente iniciará a recatalogação em background. Acompanhe na aba Processamentos');
         this.sincronizando = false;
         
         this.router.navigate(['/banco-questoes/gerenciar']);

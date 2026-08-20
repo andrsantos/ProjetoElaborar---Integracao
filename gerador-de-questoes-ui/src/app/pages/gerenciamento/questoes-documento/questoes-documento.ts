@@ -6,8 +6,6 @@ import { BancoQuestao } from '../../../models/banco-questao.model';
 import { BancoQuestoesService } from '../../../services/banco-questoes/banco-questoes';
 import { FormsModule } from '@angular/forms';
 import { DocumentosService } from '../../../services/documentos/documentos-service';
-
-// Importando o serviço de Prompt
 import { PromptService } from '../../../services/prompts/prompt-service';
 
 @Component({
@@ -164,6 +162,6 @@ export class QuestoesDocumento implements OnInit {
   }
 
   voltar(): void {
-    this.router.navigate(['/gerenciamento']);
+    this.router.navigate(['/gerenciamento'], { queryParams: { tab: 'provas' } });
   }
 }

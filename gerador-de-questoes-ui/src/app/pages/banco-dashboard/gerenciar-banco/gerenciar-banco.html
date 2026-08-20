@@ -18,7 +18,7 @@
 
         <button 
           *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva"
-          routerLink="/banco-questoes/taxonomia" 
+          routerLink="/banco-questoes/gerenciar/taxonomia" 
           class="btn-taxonomia"
           style="display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 6px; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #475569; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color 0.2s ease;"
           onmouseover="this.style.backgroundColor='#e2e8f0'"
@@ -42,7 +42,7 @@
     </div>
 
     <div class="controls-bar" *ngIf="questoes && questoes.length > 0">
-      <button class="btn-cadastrar" (click)="abrirCadastro()">
+      <button class="btn-cadastrar" (click)="bloquearFluxo($event)">
         + Cadastrar Questão
       </button>
 

@@ -88,7 +88,7 @@ export class DetalhePrompt implements OnInit {
   }
     
   voltarParaPainel(): void {
-    this.router.navigate(['/gerenciamento']);
+    this.router.navigate(['/gerenciamento'], { queryParams: { tab: 'prompts' } });
   }
 
   salvarPrompt(): void {

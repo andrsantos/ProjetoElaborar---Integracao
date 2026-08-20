@@ -1,7 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { GerenciamentoService } from '../../services/gerenciamento/gerenciamento-service';
 import { ExtracaoJob } from '../../models/extracao-job.model';
@@ -46,6 +46,7 @@ export class Gerenciamento implements OnInit {
     private gerenciamentoService: GerenciamentoService,
     private jobService: JobService,
     private router: Router,
+    private route: ActivatedRoute, 
     private toastr: ToastrService,
     private contextService: DisciplinaContextService,
     private disciplinaService: DisciplinaService,
@@ -55,10 +56,12 @@ export class Gerenciamento implements OnInit {
   ) { }
 
 
+
   ngOnInit(): void {
+    const abaDesejada = this.route.snapshot.queryParamMap.get('tab') || 'documentation';
 
     this.managementForm = this.fb.group({
-      tableType: ['documentation', Validators.required] 
+      tableType: [abaDesejada, Validators.required] 
     });
 
     this.managementForm.get('tableType')?.valueChanges.subscribe(() => {
@@ -91,6 +94,11 @@ export class Gerenciamento implements OnInit {
       }
     });
     
+    if (this.route.snapshot.queryParamMap.has('tab')) {
+      setTimeout(() => {
+        this.onSearch();
+      });
+    }
   }
 
   onSearch(): void {
@@ -162,11 +170,11 @@ export class Gerenciamento implements OnInit {
   }
 
   irParaNovoPrompt(): void {
-    this.router.navigate(['/detalhe-prompt']);
+    this.router.navigate(['gerenciamento/detalhe-prompt']);
   }
 
   verDetalhesPrompt(id: string): void {
-    this.router.navigate(['/detalhe-prompt'], { queryParams: { promptId: id } });
+    this.router.navigate(['gerenciamento/detalhe-prompt'], { queryParams: { promptId: id } });
   }
 
   excluirPrompt(prompt: Prompt): void {
@@ -411,4 +419,14 @@ export class Gerenciamento implements OnInit {
   verQuestoesDaProva(provaId: string): void {
     this.router.navigate(['/gerenciamento/prova', provaId, 'questoes']);
   }
+
+    bloquearFluxo(event: Event): void {
+    event.preventDefault(); 
+    this.toastr.warning(
+      'Este fluxo está temporariamente fechado para manutenção. Aguarde atualizações.', 
+      'Em Manutenção'
+    );
+  }
+
+  
 }

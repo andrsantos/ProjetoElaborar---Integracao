@@ -60,7 +60,7 @@ export const routes: Routes = [
     data: { breadcrumb: 'Automático' }
   },
   {
-    path: 'gerar-prova/rapida', 
+    path: 'gerar-prova/escolher-modelo-prova/rapida', 
     component: GeracaoRapida,
     title: 'Gerar Prova - Rápida',
     canActivate: [AuthGuard, DisciplinaGuard],
@@ -116,7 +116,7 @@ export const routes: Routes = [
     data: { breadcrumb: 'Gerenciar' }
   },
   {
-    path: 'banco-questoes/taxonomia',
+    path: 'banco-questoes/gerenciar/taxonomia',
     component: EditarTaxonomia,
     title: 'Taxonomia da Disciplina',
     canActivate: [AuthGuard, DisciplinaGuard],
@@ -151,7 +151,7 @@ export const routes: Routes = [
     data: { Nbreadcrumb: 'Cadastrar Documento' }
   },
   {
-    path: 'detalhe-prompt',
+    path: 'gerenciamento/detalhe-prompt',
     component: DetalhePrompt,
     title: 'Detalhes de Prompt',
     canActivate: [AuthGuard, DisciplinaGuard],

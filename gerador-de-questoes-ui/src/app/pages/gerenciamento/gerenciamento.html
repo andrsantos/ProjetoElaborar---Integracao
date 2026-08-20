@@ -77,7 +77,8 @@
 
         <div class="table-header-actions">
           <span>Documentos na Base: <strong>{{ listaMateriaisFiltrada.length }}</strong></span>
-          <button type="button" class="btn-insert" (click)="irParaCadastroDocumento()">
+          <!-- <button type="button" class="btn-insert" (click)="irParaCadastroDocumento()"> -->
+          <button type="button" class="btn-insert" (click)="bloquearFluxo($event)">
             <i class="fas fa-plus-circle"></i> Novo Upload de PDF
           </button>
         </div>
