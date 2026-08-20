@@ -8,7 +8,7 @@
   <div class="cards-grid">
     
     <!-- Card 1: Geração Expressa (Nova) -->
-    <a class="card expressa" routerLink="/gerar-prova/rapida">
+    <a class="card expressa" routerLink="/gerar-prova/escolher-modelo-prova/rapida">
       <div class="icon-wrapper expressa-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
@@ -21,7 +21,7 @@
     </a>
 
     <!-- Card 2: Geração Analógica (Antiga) -->
-    <a class="card analogica" routerLink="/gerar-prova/prova-builder">
+    <a (click)="bloquearFluxo($event)" class="card analogica">
       <div class="icon-wrapper analogica-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="4" y1="21" x2="4" y2="14"></line>

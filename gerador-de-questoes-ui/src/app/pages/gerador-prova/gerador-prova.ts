@@ -51,4 +51,12 @@ export class GeradorProva {
     });
   }
 
+  bloquearFluxo(event: Event): void {
+    event.preventDefault(); 
+    this.toastr.warning(
+      'Este fluxo está temporariamente fechado para manutenção. Aguarde atualizações.', 
+      'Em Manutenção'
+    );
+  }
+
 }

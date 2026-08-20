@@ -15,10 +15,9 @@
 
   <div class="menu-grid">
     
-    <!-- OPÇÃO 1: AUTOMÁTICA -->
-    <!-- Redireciona para a rota da geração automática -->
-    <a [routerLink]="['/gerar-prova/automatico']" class="menu-card auto">
- <div class="icon-container">
+    <!-- OPÇÃO 1: AUTOMÁTICA (Temporariamente Bloqueada) -->
+    <a (click)="bloquearFluxo($event)" class="menu-card auto" style="cursor: pointer;">
+      <div class="icon-container">
         <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="10" rx="2"></rect>
           <circle cx="12" cy="5" r="2"></circle>

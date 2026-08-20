@@ -7,6 +7,8 @@ import { DisciplinaContextService } from '../../services/disciplina-context/disc
 import { JobResumo } from '../../models/job-resumo.model';
 import { JobService } from '../../services/job/job-service';
 import { UsuarioService } from '../../services/usuario/usuario-service';
+import { NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-topbar',
@@ -23,6 +25,7 @@ export class Topbar implements OnInit, OnDestroy {
   public notificacoes: JobResumo[] = [];
   private unreadJobsSub?: Subscription;
   public nomeUsuario: string = 'Carregando...';
+  public mostrarNotificacoes: boolean = false;
 
   constructor(
     private notificationService: JobNotificationService,
@@ -51,7 +54,24 @@ export class Topbar implements OnInit, OnDestroy {
       }
     });
 
+    this.verificarVisibilidadeNotificacoes(this.router.url);
 
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: any) => {
+        this.verificarVisibilidadeNotificacoes(event.urlAfterRedirects);
+      });
+  }
+
+  private verificarVisibilidadeNotificacoes(url: string): void {
+    const urlLimpa = url.split('?')[0];
+    
+    if (urlLimpa === '/' || urlLimpa === '/inicio' || urlLimpa === '/login') {
+      this.mostrarNotificacoes = false;
+      this.fecharDropdown(); 
+    } else {
+      this.mostrarNotificacoes = true;
+    }
   }
 
   ngOnDestroy() {

@@ -4,7 +4,7 @@
 
   <div class="topbar-actions">
     
-    <div class="notification-wrapper">
+    <div class="notification-wrapper" *ngIf="mostrarNotificacoes">
       <button class="btn-icon" (click)="toggleDropdown()" [class.active]="mostrarDropdown">
         <i class="fas fa-bell" [ngClass]="{'ring-animation': temNotificacao}"></i>
         <span class="badge-dot" *ngIf="temNotificacao"></span>
