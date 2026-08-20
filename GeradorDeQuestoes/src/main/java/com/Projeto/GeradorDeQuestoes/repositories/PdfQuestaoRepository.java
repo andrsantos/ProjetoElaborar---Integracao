@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.Projeto.GeradorDeQuestoes.dto.PdfQuestaoResumoDTO;
@@ -18,5 +19,13 @@ public interface PdfQuestaoRepository extends JpaRepository<PdfQuestaoEntity, UU
            "GROUP BY p.id, p.nomeOriginal, p.tamanhoBytes, p.dataUpload " +
            "ORDER BY p.dataUpload DESC")
     List<PdfQuestaoResumoDTO> buscarTodosResumos();
+
+
+    @Query("SELECT p.id AS id, p.nomeOriginal AS nomeOriginal, p.tamanhoBytes AS tamanhoBytes, p.dataUpload AS dataUpload, COUNT(q.id) AS quantidadeQuestoes " +
+           "FROM PdfQuestaoEntity p LEFT JOIN p.questoesExtraidas q " +
+           "WHERE p.disciplinaId = :disciplinaId " + 
+           "GROUP BY p.id, p.nomeOriginal, p.tamanhoBytes, p.dataUpload " +
+           "ORDER BY p.dataUpload DESC")
+    List<PdfQuestaoResumoDTO> findResumosByDisciplinaId(@Param("disciplinaId") String disciplinaId);
     
 }

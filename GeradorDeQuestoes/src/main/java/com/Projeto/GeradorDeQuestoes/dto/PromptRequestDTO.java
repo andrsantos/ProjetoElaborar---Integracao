@@ -6,6 +6,9 @@ public class PromptRequestDTO {
     private String nivel; 
     private String instrucao;
     private boolean ativo;    
+    private String disciplinaId;
+
+
 
     public PromptRequestDTO() {
     }
@@ -47,4 +50,14 @@ public class PromptRequestDTO {
     public void setAtivo(boolean ativo) {
         this.ativo = ativo;
     }
+
+
+    public String getDisciplinaId() {
+        return this.disciplinaId;
+    }
+
+    public void setDisciplinaId(String disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
 }

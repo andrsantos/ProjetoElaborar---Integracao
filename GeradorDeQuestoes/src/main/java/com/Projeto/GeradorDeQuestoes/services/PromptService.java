@@ -18,5 +18,7 @@ public interface PromptService {
     void deletar(String id);
 
     List<PromptResponseDTO> listarTodos();
+
+    List<PromptResponseDTO> listarPorDisciplina(String disciplinaId);
     
 }

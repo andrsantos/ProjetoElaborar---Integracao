@@ -27,6 +27,14 @@ public class PromptEntity {
     @Column(name = "ativo")
     private boolean ativo = true;
 
+    @Column(name = "disciplina_id", nullable = true)
+    private String disciplinaId;
+
+    @Column(name = "is_padrao", nullable = false)
+    private boolean isPadrao = false;
+
+
+
     public PromptEntity() {}
 
     public String getId() { return this.id; }
@@ -43,4 +51,31 @@ public class PromptEntity {
 
     public boolean isAtivo() { return this.ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }
+
+
+    public boolean getAtivo() {
+        return this.ativo;
+    }
+
+
+    public String getDisciplinaId() {
+        return this.disciplinaId;
+    }
+
+    public void setDisciplinaId(String disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
+    public boolean isIsPadrao() {
+        return this.isPadrao;
+    }
+
+    public boolean getIsPadrao() {
+        return this.isPadrao;
+    }
+
+    public void setIsPadrao(boolean isPadrao) {
+        this.isPadrao = isPadrao;
+    }
+
 }

@@ -50,6 +50,9 @@ export class GerenciarBanco implements OnInit {
   public carregandoNomeDisciplina: boolean = true;
   dropdownConceitoAberto: boolean = false;
 
+  paginaAtual: number = 1;
+  itensPorPagina: number = 10;
+
 
   constructor(
     private bancoService: BancoQuestoesService,
@@ -172,6 +175,7 @@ export class GerenciarBanco implements OnInit {
     });
 
     this.questoesExibidas = resultado;
+    this.paginaAtual = 1;
   }
 
   onDataChange() {
@@ -224,31 +228,28 @@ export class GerenciarBanco implements OnInit {
   }
 
   // --- LÓGICA DE EDIÇÃO INLINE ---
-  isEditando(indexQuestao: number, campo: string): boolean {
-    return !!this.editStates[`${indexQuestao}_${campo}`];
+  isEditando(id: string | undefined, campo: string): boolean {
+    if (!id) return false;
+    return !!this.editStates[`${id}_${campo}`];
   }
 
-  ativarEdicao(indexQuestao: number, campo: string): void {
-    this.editStates[`${indexQuestao}_${campo}`] = true;
+  ativarEdicao(id: string | undefined, campo: string): void {
+    if (!id) return;
+    this.editStates[`${id}_${campo}`] = true;
   }
 
-  salvarEdicaoItem(questao: BancoQuestao, indexQuestao: number, campo: string): void {
-    this.editStates[`${indexQuestao}_${campo}`] = false;
+  salvarEdicaoItem(questao: BancoQuestao, campo: string): void {
+    if (!questao.id) return;
+    this.editStates[`${questao.id}_${campo}`] = false;
 
     if (campo === 'resposta' && questao.respostaCorreta) {
       questao.respostaCorreta = questao.respostaCorreta.toLowerCase();
     }
 
-    if (questao.id) {
-      this.bancoService.atualizarQuestao(questao.id, questao).subscribe({
-        next: () => {
-          this.toastr.success('Alteração salva com sucesso!');
-        },
-        error: () => {
-          this.toastr.error('Erro ao salvar alteração. Verifique a conexão.');
-        }
-      });
-    }
+    this.bancoService.atualizarQuestao(questao.id, questao).subscribe({
+      next: () => this.toastr.success('Alteração salva com sucesso!'),
+      error: () => this.toastr.error('Erro ao salvar alteração. Verifique a conexão.')
+    });
   }
 
   salvarQuestao() {
@@ -319,6 +320,28 @@ export class GerenciarBanco implements OnInit {
       if (!clicouDentro) {
         this.dropdownConceitoAberto = false;
       }
+    }
+  }
+
+// LÓGICA DE PAGINAÇÃO
+  get totalPaginas(): number {
+    return Math.ceil(this.questoesExibidas.length / this.itensPorPagina) || 1;
+  }
+
+  get questoesPaginadas(): BancoQuestao[] {
+    const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
+    const fim = inicio + this.itensPorPagina;
+    return this.questoesExibidas.slice(inicio, fim);
+  }
+
+  mudarPagina(proxima: boolean): void {
+    if (proxima && this.paginaAtual < this.totalPaginas) {
+      this.paginaAtual++;
+      window.scrollTo({ top: 0, behavior: 'smooth' }); 
+    }
+    else if (!proxima && this.paginaAtual > 1) {
+      this.paginaAtual--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 

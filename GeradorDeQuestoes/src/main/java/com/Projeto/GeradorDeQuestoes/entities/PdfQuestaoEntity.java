@@ -39,6 +39,9 @@ public class PdfQuestaoEntity {
     private Long tamanhoBytes;
     private LocalDateTime dataUpload;
 
+    @Column(name = "disciplina_id")
+    private String disciplinaId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prompt_id")
     private PromptEntity promptUtilizado;
@@ -110,6 +113,14 @@ public class PdfQuestaoEntity {
         this.dataUpload = dataUpload;
     }
 
+    public String getDisciplinaId() {
+        return disciplinaId;
+    }
+
+    public void setDisciplinaId(String disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
     public PromptEntity getPromptUtilizado() {
         return promptUtilizado;
     }
@@ -126,10 +137,4 @@ public class PdfQuestaoEntity {
     public void setQuestoesExtraidas(List<BancoQuestaoEntity> questoesExtraidas) {
         this.questoesExtraidas = questoesExtraidas;
     }
-
-
-
-
-
-    
 }

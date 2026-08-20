@@ -61,6 +61,7 @@ public class IngestaoMaterialService {
     private final VectorStoreRepository vectorStoreRepository;
     private final TradutorVisualService tradutorVisualService;
     private final PromptService promptService;
+    private final SseNotificationService sseNotificationService;
 
 
     public IngestaoMaterialService(VectorStore vectorStore, 
@@ -71,7 +72,8 @@ public class IngestaoMaterialService {
        CarteiraService carteiraService, 
        VectorStoreRepository vectorStoreRepository, 
        TradutorVisualService tradutorVisualService,
-       PromptService promptService) {
+       PromptService promptService, 
+       SseNotificationService sseNotificationService) {
         
         this.vectorStore = vectorStore;
         this.anthropicChatClient = anthropicChatClient;
@@ -84,6 +86,7 @@ public class IngestaoMaterialService {
         this.vectorStoreRepository = vectorStoreRepository;
         this.tradutorVisualService = tradutorVisualService;
         this.promptService  = promptService;
+        this.sseNotificationService = sseNotificationService;
     }
 
     public void importarCapituloLivroDificil(Resource pdfResource, String topico, String fonte) {
@@ -1164,6 +1167,7 @@ public class IngestaoMaterialService {
             
             jobService.salvar(jobConcluido);
             System.out.println("[ASYNC WORKER] Sucesso/Parcial no Job ID: " + jobId);
+            sseNotificationService.notificarAtualizacao(disciplinaId);
 
         } catch (Exception e) {
             System.err.println("[ASYNC WORKER] Falha no Job ID: " + jobId + " - " + e.getMessage());
@@ -1173,6 +1177,7 @@ public class IngestaoMaterialService {
                 jobErro.setStatus("ERROR");
                 jobErro.setMensagemErro(e.getMessage());
                 jobService.salvar(jobErro);
+                sseNotificationService.notificarAtualizacao(disciplinaId);
             } catch (Exception ex) {
                 System.err.println("[ASYNC WORKER] Falha crítica ao tentar salvar status de erro: " + ex.getMessage());
             }

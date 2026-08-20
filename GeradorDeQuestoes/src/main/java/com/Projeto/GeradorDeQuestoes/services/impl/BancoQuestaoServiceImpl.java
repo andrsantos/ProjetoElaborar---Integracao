@@ -20,11 +20,14 @@ import com.Projeto.GeradorDeQuestoes.dto.ConceitoConfigDTO;
 import com.Projeto.GeradorDeQuestoes.dto.GeracaoAutomaticaRequest;
 import com.Projeto.GeradorDeQuestoes.dto.QuestaoDTO;
 import com.Projeto.GeradorDeQuestoes.entities.BancoQuestaoEntity;
+import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
 import com.Projeto.GeradorDeQuestoes.entities.UsuarioEntity;
 import com.Projeto.GeradorDeQuestoes.enums.NivelTecnico;
 import com.Projeto.GeradorDeQuestoes.repositories.BancoQuestaoRepository;
 import com.Projeto.GeradorDeQuestoes.services.BancoQuestaoService;
 import com.Projeto.GeradorDeQuestoes.services.CobrancaLlmService;
+import com.Projeto.GeradorDeQuestoes.services.JobService;
+import com.Projeto.GeradorDeQuestoes.services.SseNotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -39,17 +42,21 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
     private final ChatClient chatClient;        
     private final ChatClient anthropicChatClient;
     private final CobrancaLlmService cobrancaLlmService;
-
+    private final JobService jobService;
+    private final SseNotificationService sseNotificationService;
 
     BancoQuestaoServiceImpl(BancoQuestaoRepository bancoQuestaoRepository, 
         @Qualifier("openAiChatClient") ChatClient chatClient, 
         @Qualifier("anthropicChatClient") ChatClient anthropicChatClient, 
-
-        CobrancaLlmService cobrancaLlmService) {
+        CobrancaLlmService cobrancaLlmService, 
+        JobService jobService,
+        SseNotificationService sseNotificationService, SseNotificationService sseNotificationService2) {
         this.chatClient = chatClient;
         this.bancoQuestaoRepository = bancoQuestaoRepository;
         this.anthropicChatClient = anthropicChatClient;
         this.cobrancaLlmService = cobrancaLlmService;
+        this.jobService = jobService;
+        this.sseNotificationService = sseNotificationService2;
     }
 
     @Override
@@ -320,26 +327,37 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
     }
 
 
+    
     @Async
-    @Transactional 
-    public void reorganizarBancoAssincrono(String disciplinaId, List<String> novaTaxonomia, UsuarioEntity usuario) {
+    public void reorganizarBancoAssincrono(String disciplinaId, List<String> novaTaxonomia, UsuarioEntity usuario, String jobId) {
 
         System.out.println("[ASYNC] Iniciando recatalogação do banco para a disciplina: " + disciplinaId);
 
-        List<BancoQuestaoEntity> todasQuestoes = bancoQuestaoRepository.findByDisciplinaId(disciplinaId);
-        if (todasQuestoes.isEmpty()) {
-            System.out.println("Nenhuma questão encontrada para recatalogar.");
-            return;
-        }
+        try {
+            System.out.println("Job ID" + jobId);
+            ExtracaoJobEntity job = new ExtracaoJobEntity(jobId, "PROCESSING", "Recatalogação de Taxonomia", "EDICAO_TAXONOMIA");
+            job.setDisciplinaId(disciplinaId);
+            job.setModoExtracao("IA_LOTE");
+            jobService.salvar(job);
 
-        ObjectMapper mapper = new ObjectMapper();
-        int tamanhoLote = 20;
+            List<BancoQuestaoEntity> todasQuestoes = bancoQuestaoRepository.findByDisciplinaId(disciplinaId);
+            if (todasQuestoes.isEmpty()) {
+                System.out.println("Nenhuma questão encontrada para recatalogar.");
+                
+                job.setStatus("COMPLETED");
+                job.setMensagemErro("Nenhuma questão encontrada para recatalogar.");
+                jobService.salvar(job);
+                sseNotificationService.notificarAtualizacao(disciplinaId);
+                return;
+            }
 
-        for (int i = 0; i < todasQuestoes.size(); i += tamanhoLote) {
-            int fim = Math.min(todasQuestoes.size(), i + tamanhoLote);
-            List<BancoQuestaoEntity> lote = todasQuestoes.subList(i, fim);
+            ObjectMapper mapper = new ObjectMapper();
+            int tamanhoLote = 20;
 
-            try {
+            for (int i = 0; i < todasQuestoes.size(); i += tamanhoLote) {
+                int fim = Math.min(todasQuestoes.size(), i + tamanhoLote);
+                List<BancoQuestaoEntity> lote = todasQuestoes.subList(i, fim);
+
                 ArrayNode jsonArray = mapper.createArrayNode();
                 for (BancoQuestaoEntity q : lote) {
                     ObjectNode no = mapper.createObjectNode();
@@ -372,13 +390,34 @@ public class BancoQuestaoServiceImpl implements BancoQuestaoService {
 
                 bancoQuestaoRepository.saveAll(lote);
                 System.out.println("✅ Lote " + fim + "/" + todasQuestoes.size() + " salvo. Questões atualizadas: " + atualizadas);
+            }
+            
+            ExtracaoJobEntity jobConcluido = jobService.consultarStatusJob(jobId);
+            if (jobConcluido != null) {
+                jobConcluido.setStatus("COMPLETED");
+                ObjectMapper jsonMapper = new ObjectMapper();
+                jobConcluido.setResultadoJson(jsonMapper.writeValueAsString(novaTaxonomia));
+                jobService.salvar(jobConcluido);
+                sseNotificationService.notificarAtualizacao(disciplinaId);
+            }
+            
+            System.out.println("🎉 [ASYNC] Recatalogação concluída para a disciplina: " + disciplinaId);
 
-            } catch (Exception e) {
-                System.err.println("❌ Falha ao processar lote de recatalogação: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("❌ Falha ao processar recatalogação: " + e.getMessage());
+            
+            try {
+                ExtracaoJobEntity jobErro = jobService.consultarStatusJob(jobId);
+                if (jobErro != null) {
+                    jobErro.setStatus("ERROR");
+                    jobErro.setMensagemErro(e.getMessage());
+                    jobService.salvar(jobErro);
+                    sseNotificationService.notificarAtualizacao(disciplinaId);
+                }
+            } catch (Exception ex) {
+                System.err.println("Falha crítica ao atualizar job de erro: " + ex.getMessage());
             }
         }
-        
-        System.out.println("🎉 [ASYNC] Recatalogação concluída para a disciplina: " + disciplinaId);
     }
 
 

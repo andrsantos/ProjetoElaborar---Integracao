@@ -8,6 +8,8 @@ import com.Projeto.GeradorDeQuestoes.entities.ExtracaoJobEntity;
 import com.Projeto.GeradorDeQuestoes.repositories.ExtracaoJobRepository;
 import com.Projeto.GeradorDeQuestoes.services.JobService;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class JobServiceImpl implements JobService {
 
@@ -43,4 +45,41 @@ public class JobServiceImpl implements JobService {
         
         jobRepository.delete(job);
     }
+
+    @Override
+    public void salvar(ExtracaoJobEntity extracaoJob) {
+       jobRepository.save(extracaoJob);
+    }
+
+
+    @Override
+    public void consolidarJob(String id) {
+        ExtracaoJobEntity job = jobRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Processamento não encontrado."));
+
+        if (!"COMPLETED".equals(job.getStatus()) && !"PARCIALMENTE_CONCLUIDO".equals(job.getStatus())) {
+            throw new IllegalStateException("Apenas processamentos concluídos podem ser consolidados no banco de dados.");
+        }
+
+        job.setStatus("CONSOLIDADO");
+        jobRepository.save(job);
+    }
+
+
+    @Override
+    @Transactional
+    public void marcarVisualizadosPorDisciplina(String disciplinaId) {
+        jobRepository.marcarJobsComoVisualizados(disciplinaId);
+    }
+
+    @Override
+    public void marcarJobComoVisualizado(String id) {
+        ExtracaoJobEntity job = jobRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Processamento não encontrado."));
+        
+        job.setVisualizado(true);
+        jobRepository.save(job);
+    }
+
+
 }

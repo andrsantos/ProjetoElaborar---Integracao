@@ -1,10 +1,10 @@
 <div class="container">
 
   <header>
+    
     <div class="dashboard-header" style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px;">
       <h1 style="margin: 0;">Gerenciar Banco de Questões</h1>
       
-      <!-- WRAPPER ADICIONADO: Alinha a tag da disciplina e o botão de taxonomia na mesma linha -->
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         
         <div class="discipline-tag" *ngIf="!carregandoNomeDisciplina && nomeDisciplinaAtiva">
@@ -138,77 +138,104 @@
     </button>
   </div>
 
+  <!-- LISTA DE QUESTÕES -->
   <div class="lista-questoes" *ngIf="!isLoading">
-    <div class="card-questao" *ngFor="let q of questoesExibidas; let i = index">
+    
+    <div class="card-questao" *ngFor="let q of questoesPaginadas; let i = index">
+      
+      <!-- Cabeçalho Acadêmico -->
       <div class="card-header">
-        <div class="badges">
-          <span class="badge-tipo">{{ q.tipo }}</span>
-          <!-- <span class="badge-topico">{{ q.topico }}</span> -->
-          <span class="badge-topico">{{ q.conceito }}</span>
-          <span class="badge-topico">{{ q.nivel }}</span>
+        <div class="questao-info">
+          <span class="questao-numero">Questão {{ (paginaAtual - 1) * itensPorPagina + i + 1 }}</span>
+          <div class="badges-academicos">
+            <span class="badge-tag">{{ q.conceito || 'Sem conceito' }}</span>
+            <span class="badge-tag">{{ q.nivel }}</span>
+          </div>
         </div>
-        <div class="data-postagem">
-          <small>Inserida em: {{ q.dataCriacao | date:'dd/MM/yyyy HH:mm' }}</small>
+        <div class="questao-meta">
+          <span>Cadastrada em: {{ q.dataCriacao | date:'dd/MM/yyyy' }}</span>
         </div>
       </div>
 
-      <div class="campo-editavel" style="margin-top: 15px;">
-        <div class="enunciado" *ngIf="!isEditando(i, 'enunciado')">
+      <!-- Enunciado -->
+      <div class="campo-editavel">
+        <div class="enunciado" *ngIf="!isEditando(q.id, 'enunciado')">
           {{ q.enunciado }}
-          <button class="btn-icon-edit" (click)="ativarEdicao(i, 'enunciado')" title="Editar Enunciado">✎</button>
+          <button class="btn-icon-edit" (click)="ativarEdicao(q.id, 'enunciado')" title="Editar Enunciado"><i class="fas fa-pencil-alt"></i></button>
         </div>
-        <div *ngIf="isEditando(i, 'enunciado')" class="edit-box">
-          <textarea [(ngModel)]="q.enunciado" rows="4" class="form-control-inline" style="width: 100%;"></textarea>
-          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, 'enunciado')">OK</button>
+        <div *ngIf="isEditando(q.id, 'enunciado')" class="edit-box">
+          <textarea [(ngModel)]="q.enunciado" rows="4" class="form-control-inline"></textarea>
+          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, 'enunciado')">Salvar Enunciado</button>
         </div>
       </div>
 
+      <!-- Alternativas Estilo Prova -->
       <div class="area-alternativas" *ngIf="q.tipo === 'MULTIPLA_ESCOLHA_4' || q.tipo === 'MULTIPLA_ESCOLHA_5'">
         <div class="alternativa campo-editavel" *ngFor="let key of objectKeys(q.alternativas)">
           <ng-container *ngIf="q.alternativas[key]">
-            <div *ngIf="!isEditando(i, key)">
-              <span class="letra">{{ key | uppercase }})</span>
+            
+            <div class="alt-content" *ngIf="!isEditando(q.id, key)">
+              <span class="letra">({{ key | lowercase }})</span>
               <span class="texto">{{ q.alternativas[key] }}</span>
-              <button class="btn-icon-edit" (click)="ativarEdicao(i, key)" title="Editar Alternativa">✎</button>
+              <button class="btn-icon-edit" (click)="ativarEdicao(q.id, key)" title="Editar Alternativa"><i class="fas fa-pencil-alt"></i></button>
             </div>
 
-            <div *ngIf="isEditando(i, key)" class="edit-box">
-              <span class="letra">{{ key | uppercase }})</span>
-              <input [(ngModel)]="q.alternativas[key]" class="form-control-inline" style="width: 80%;">
-              <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, key)">OK</button>
+            <div *ngIf="isEditando(q.id, key)" class="edit-box">
+              <div class="edit-alt-wrapper">
+                <span class="letra">({{ key | lowercase }})</span>
+                <input [(ngModel)]="q.alternativas[key]" class="form-control-inline">
+              </div>
+              <button class="btn-save-inline" (click)="salvarEdicaoItem(q, key)">OK</button>
             </div>
+
           </ng-container>
         </div>
       </div>
 
-      <div class="campo-editavel" style="margin-top: 15px;">
-        <div class="gabarito" *ngIf="!isEditando(i, 'resposta')">
-          <strong>Resposta Correta:</strong> {{ q.respostaCorreta | uppercase }}
-          <button class="btn-icon-edit" (click)="ativarEdicao(i, 'resposta')" title="Editar Gabarito">✎</button>
+      <!-- Gabarito -->
+      <div class="campo-editavel gabarito-section">
+        <div class="gabarito-view" *ngIf="!isEditando(q.id, 'resposta')">
+          <span class="label">Gabarito:</span> 
+          <span class="resposta-letra">{{ q.respostaCorreta | uppercase }}</span>
+          <button class="btn-icon-edit" (click)="ativarEdicao(q.id, 'resposta')" title="Editar Gabarito"><i class="fas fa-pencil-alt"></i></button>
         </div>
-        <div *ngIf="isEditando(i, 'resposta')" class="edit-box">
+        
+        <div *ngIf="isEditando(q.id, 'resposta')" class="edit-box inline-edit">
           <label>Gabarito:</label>
           <select [(ngModel)]="q.respostaCorreta" class="form-control-inline-select">
-            <option value="a">A</option>
-            <option value="b">B</option>
-            <option value="c">C</option>
-            <option value="d">D</option>
-            <option value="e" *ngIf="q.tipo === 'MULTIPLA_ESCOLHA_5'">E</option>
+            <option *ngFor="let letra of ['a','b','c','d','e']" [value]="letra">{{ letra | uppercase }}</option>
           </select>
-          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, i, 'resposta')">OK</button>
+          <button class="btn-save-inline" (click)="salvarEdicaoItem(q, 'resposta')">OK</button>
         </div>
       </div>
 
-      <div class="card-actions">
-        <button class="btn-comentarios" (click)="abrirComentarios(q)">
-          Comentários
+      <!-- Ações (Comentários e Excluir) -->
+      <div class="card-actions-academic">
+        <button class="btn-text-action action-comments" (click)="abrirComentarios(q)">
+          <i class="fas fa-comment-alt"></i> Ver Comentário Técnico
         </button>
-        <button class="btn-excluir" (click)="onExcluir(q.id)">
-          Excluir
+        <button class="btn-text-action action-delete" (click)="onExcluir(q.id)">
+          <i class="fas fa-trash-alt"></i> Excluir Questão
         </button>
       </div>
+
     </div>
+
+    <!-- CONTROLES DE PAGINAÇÃO -->
+    <div class="pagination-controls" *ngIf="totalPaginas > 1">
+      <button class="btn-page" (click)="mudarPagina(false)" [disabled]="paginaAtual === 1">
+        <i class="fas fa-chevron-left"></i> Anterior
+      </button>
+      
+      <span class="page-info">Página <strong>{{ paginaAtual }}</strong> de {{ totalPaginas }}</span>
+      
+      <button class="btn-page" (click)="mudarPagina(true)" [disabled]="paginaAtual === totalPaginas">
+        Próxima <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
   </div>
+
 </div>
 
 <div class="modal-overlay" *ngIf="isComentarioModalOpen && questaoComentario">

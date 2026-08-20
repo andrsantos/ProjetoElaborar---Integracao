@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { PromptService } from '../../../services/prompts/prompt-service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DisciplinaContextService } from '../../../services/disciplina-context/disciplina-context-service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-detalhe-prompt',
@@ -18,21 +20,39 @@ export class DetalhePrompt implements OnInit {
   isSaving: boolean = false;
   promptForm!: FormGroup;
   promptId: string | null = null; 
+  public disciplinaAtivaId: string | null = null; 
   
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private promptService: PromptService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+   private toastr: ToastrService,
+    private contextService: DisciplinaContextService,
+   @Inject(PLATFORM_ID) private platformId: Object
+
+    
   ) {}
 
   ngOnInit(): void {
+
+    this.disciplinaAtivaId = this.contextService.getDisciplinaAtivaId();
+
+    if (!this.disciplinaAtivaId) {
+      if (isPlatformBrowser(this.platformId)) {
+        this.toastr.error('Nenhuma disciplina selecionada. Retornando ao início.', 'Atenção');
+        this.router.navigate(['/']);
+      }
+      return; 
+    }
 
     this.promptForm = this.fb.group({
       nome: ['', Validators.required],
       nivel: [''],
       instrucao: ['', [Validators.required, Validators.minLength(20)]],
-      ativo: [true] 
+      ativo: [true] ,
+      isPadrao: [false],
+      disciplinaId: this.disciplinaAtivaId
     });
 
     this.route.queryParamMap.subscribe(params => {

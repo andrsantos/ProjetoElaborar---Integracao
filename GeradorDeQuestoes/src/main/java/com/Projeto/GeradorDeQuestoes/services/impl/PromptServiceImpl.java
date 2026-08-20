@@ -27,12 +27,13 @@ public class PromptServiceImpl implements PromptService {
     @Override
     @Transactional
     public PromptResponseDTO criar(PromptRequestDTO dto) {
-
         PromptEntity prompt = new PromptEntity();
         prompt.setNivel(dto.getNivel());
         prompt.setNome(dto.getNome());
         prompt.setInstrucao(dto.getInstrucao());
         prompt.setAtivo(dto.isAtivo());
+        prompt.setDisciplinaId(dto.getDisciplinaId()); 
+        prompt.setIsPadrao(false); 
 
         PromptEntity promptSalvo = promptRepository.save(prompt);
 
@@ -58,15 +59,21 @@ public class PromptServiceImpl implements PromptService {
         return converterParaDTO(prompt);
     }
 
+
     @Override
     @Transactional
     public PromptResponseDTO atualizar(String id, PromptRequestDTO dto) {
         PromptEntity prompt = promptRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Prompt não encontrado com o ID: " + id));
 
+        if (prompt.isIsPadrao()) {
+            throw new IllegalStateException("Não é permitido editar um prompt padrão do sistema.");
+        }
+
         prompt.setNivel(dto.getNivel());
         prompt.setInstrucao(dto.getInstrucao());
         prompt.setAtivo(dto.isAtivo());
+        prompt.setNome(dto.getNome()); 
 
         PromptEntity promptAtualizado = promptRepository.save(prompt);
         return converterParaDTO(promptAtualizado);
@@ -91,6 +98,7 @@ public class PromptServiceImpl implements PromptService {
         promptRepository.deleteById(id);
     }
 
+
     private PromptResponseDTO converterParaDTO(PromptEntity entity) {
         PromptResponseDTO dto = new PromptResponseDTO();
         dto.setId(entity.getId());
@@ -98,6 +106,18 @@ public class PromptServiceImpl implements PromptService {
         dto.setNivel(entity.getNivel());
         dto.setInstrucao(entity.getInstrucao());
         dto.setAtivo(entity.isAtivo());
+        dto.setDisciplinaId(entity.getDisciplinaId());
+        dto.setIsPadrao(entity.isIsPadrao());
         return dto;
+    }
+
+
+    @Override
+    public List<PromptResponseDTO> listarPorDisciplina(String disciplinaId) {
+        List<PromptEntity> prompts = promptRepository.buscarPromptsParaDisciplina(disciplinaId);
+        
+        return prompts.stream()
+                .map(this::converterParaDTO)
+                .collect(Collectors.toList());
     }
 }

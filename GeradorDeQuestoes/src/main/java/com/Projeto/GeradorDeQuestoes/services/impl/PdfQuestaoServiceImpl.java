@@ -58,5 +58,11 @@ public class PdfQuestaoServiceImpl implements PdfQuestaoService {
     }
 
 
+    @Override
+    public List<PdfQuestaoResumoDTO> buscarResumosPorDisciplina(String disciplinaId) {
+        return pdfQuestaoRepository.findResumosByDisciplinaId(disciplinaId);
+    }
+
+
     
 }

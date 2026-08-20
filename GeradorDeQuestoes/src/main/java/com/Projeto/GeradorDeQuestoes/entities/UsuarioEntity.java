@@ -26,6 +26,9 @@ public class UsuarioEntity implements UserDetails {
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     private CarteiraEntity carteira;
 
+    @Column
+    private String nome;
+
     public UsuarioEntity() {
     }
 
@@ -113,4 +116,14 @@ public class UsuarioEntity implements UserDetails {
     public int hashCode() {
         return Objects.hash(id);
     }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    
 }
